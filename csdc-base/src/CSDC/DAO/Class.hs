@@ -22,7 +22,7 @@ import CSDC.DAO.Types
   , Subpart (..)
   , Message (..)
   , Reply (..)
-  --, Inbox (..)
+  , Inbox (..)
   )
 
 import qualified CSDC.Auth.ORCID as ORCID
@@ -33,18 +33,16 @@ import Control.Monad.Trans (MonadTrans (..))
 import Data.Traversable (forM)
 
 --------------------------------------------------------------------------------
--- Class
-
-class Monad m => HasMessage a m where
-  sendMessage :: Message a -> m ()
-  sendReply :: Reply a -> m ()
-  viewReply :: Id (Reply a) -> m ()
+-- CRUD
 
 class Monad m => HasCRUD a m where
   select :: Id a -> m (Maybe a)
   insert :: a -> m (Id a)
   update :: Id a -> a ->  m ()
   delete :: Id a -> m ()
+
+--------------------------------------------------------------------------------
+-- Relation
 
 class IsRelation r where
   type RelationL r
@@ -73,11 +71,24 @@ class (IsRelation r, Monad m) => HasRelation r m where
   insertRelation :: r -> m (Id r)
   deleteRelation :: Id r -> m ()
 
+--------------------------------------------------------------------------------
+-- Message
+
+class HasRelation r m => HasMessage r m where
+  sendMessage :: Message r -> m ()
+  sendReply :: Reply r -> m ()
+  viewReply :: Id (Reply r) -> m ()
+
+--------------------------------------------------------------------------------
+-- DAO
+
 class
   ( HasCRUD Person m
   , HasCRUD Unit m
   , HasRelation Member m
   , HasRelation Subpart m
+  , HasMessage Member m
+  , HasMessage Subpart m
   ) => HasDAO m where
 
   selectPersonORCID :: ORCID.Id -> m (Maybe (Id Person))
@@ -85,6 +96,8 @@ class
   rootUnit :: m (Id Unit)
 
   createUnit :: Id Person -> m (WithId Member)
+
+  inboxPerson :: Id Person -> m Inbox
 
 getUserUnits :: HasDAO m => Id Person -> m (IdMap Member Unit)
 getUserUnits uid = do
@@ -139,6 +152,7 @@ instance HasDAO m => HasDAO (ReaderT r m) where
   selectPersonORCID = lift1 selectPersonORCID
   rootUnit = lift rootUnit
   createUnit = lift1 createUnit
+  inboxPerson = lift1 inboxPerson
 
 lift1 :: (MonadTrans t, Monad m) => (a -> m b) -> a -> t m b
 lift1 f a = lift (f a)

@@ -11,13 +11,25 @@ module CSDC.DAO.Mock
   ) where
 
 import CSDC.Data.Id (Id (..), WithId (..))
-import CSDC.Data.IdMap (IdMap)
+import CSDC.Data.IdMap (IdMap')
 import CSDC.Data.RIO (RIO, runRIO)
-import CSDC.DAO.Types (Person (..), Unit (..), Member (..), Subpart (..))
+import CSDC.DAO.Types
+  ( Person (..)
+  , Unit (..)
+  , Member (..)
+  , Subpart (..)
+  , Message (..)
+  , MessageStatus (..)
+  , Reply (..)
+  , ReplyStatus (..)
+  , ReplyType (..)
+  , Inbox (..)
+  )
 import CSDC.DAO.Class
   ( HasDAO (..)
   , HasCRUD (..)
   , HasRelation (..)
+  , HasMessage (..)
   )
 
 import qualified CSDC.Auth.ORCID as ORCID
@@ -32,10 +44,14 @@ import Control.Lens (Lens', makeLenses, view, set, use, modifying)
 -- In-memory store
 
 data Store = Store
-  { _store_person :: IdMap Person Person
-  , _store_unit :: IdMap Unit Unit
-  , _store_member :: IdMap Member Member
-  , _store_subpart :: IdMap Subpart Subpart
+  { _store_person :: IdMap' Person
+  , _store_unit :: IdMap' Unit
+  , _store_member :: IdMap' Member
+  , _store_subpart :: IdMap' Subpart
+  , _store_messageMember :: IdMap' (Message Member)
+  , _store_messageSubpart :: IdMap' (Message Subpart)
+  , _store_replyMember :: IdMap' (Reply Member)
+  , _store_replySubpart :: IdMap' (Reply Subpart)
   , _store_root :: Id Unit
   } deriving (Show, Eq)
 
@@ -48,6 +64,10 @@ makeEmptyStore = liftIO $ newMVar
     , _store_unit = singleton unitId unit
     , _store_member = singleton memberId member
     , _store_subpart = IdMap.empty
+    , _store_messageMember = IdMap.empty
+    , _store_messageSubpart = IdMap.empty
+    , _store_replyMember = IdMap.empty
+    , _store_replySubpart = IdMap.empty
     , _store_root = unitId
     }
   where
@@ -97,6 +117,31 @@ instance MonadIO m => HasDAO (Mock m) where
     update @Unit unitId unit
     pure $ WithId memberId member
 
+  inboxPerson personId = do
+    let
+      predMessageId m =
+        member_person (message_value m) == personId
+
+      predMessageWaiting m =
+        message_status m == Waiting
+
+    messageMemberAll <- IdMap.filter predMessageId <$> use store_messageMember
+
+    let
+      predReply r =
+        reply_id r `elem` IdMap.keys messageMemberAll &&
+        reply_status r == NotSeen
+
+      messageMember = IdMap.filter predMessageWaiting messageMemberAll
+
+    replyMember <- IdMap.filter predReply <$> use store_replyMember
+
+    pure Inbox
+      { inbox_messageMember = messageMember
+      , inbox_replyMember = replyMember
+      , inbox_messageSubpart = IdMap.empty
+      , inbox_replySubpart = IdMap.empty
+      }
 
 instance MonadIO m => HasCRUD Person (Mock m) where
   select uid =
@@ -155,6 +200,42 @@ instance MonadIO m => HasRelation Subpart (Mock m) where
   deleteRelation uid =
     modifying store_subpart (IdMap.delete uid)
 
+instance MonadIO m => HasMessage Member (Mock m ) where
+  sendMessage m = do
+    _ <- stating store_messageMember (IdMap.insertNew m)
+    pure ()
+
+  sendReply r = do
+    _ <- stating store_replyMember (IdMap.insertNew r)
+    let
+      status = case reply_type r of
+        Accept -> Accepted
+        Reject -> Rejected
+      uid = reply_id r
+    modifying store_messageMember $ IdMap.update uid (markMessage status)
+    pure ()
+
+  viewReply uid =
+    modifying store_replyMember $ IdMap.update uid (markReply Seen)
+
+instance MonadIO m => HasMessage Subpart (Mock m ) where
+  sendMessage m = do
+    _ <- stating store_messageSubpart (IdMap.insertNew m)
+    pure ()
+
+  sendReply r = do
+    _ <- stating store_replySubpart (IdMap.insertNew r)
+    let
+      status = case reply_type r of
+        Accept -> Accepted
+        Reject -> Rejected
+      uid = reply_id r
+    modifying store_messageSubpart $ IdMap.update uid (markMessage status)
+    pure ()
+
+  viewReply uid =
+    modifying store_replySubpart $ IdMap.update uid (markReply Seen)
+
 --------------------------------------------------------------------------------
 -- Helper
 
@@ -165,3 +246,9 @@ stating l f = do
         in (x, set l a s)
   state f'
 {-# INLINE stating #-}
+
+markMessage :: MessageStatus -> Message a -> Message a
+markMessage s m = m { message_status = s }
+
+markReply :: ReplyStatus -> Reply a -> Reply a
+markReply s r = r { reply_status = s }

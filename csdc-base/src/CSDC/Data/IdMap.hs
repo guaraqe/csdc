@@ -6,8 +6,10 @@ module CSDC.Data.IdMap
   , find
   , insert
   , insertNew
+  , update
   , delete
   , filter
+  , keys
   ) where
 
 import CSDC.Data.Id (Id (..), zero, next)
@@ -44,6 +46,9 @@ find p (IdMap m) =
 insert :: Id a -> b -> IdMap a b -> IdMap a b
 insert (Id uid) a (IdMap m) = IdMap $ IntMap.insert uid a m
 
+update :: Id a -> (b -> b) -> IdMap a b -> IdMap a b
+update (Id uid) f (IdMap m) = IdMap $ IntMap.adjust f uid m
+
 insertNew :: b -> IdMap a b -> (Id a, IdMap a b)
 insertNew a idmap@(IdMap m) =
   let
@@ -59,3 +64,6 @@ delete (Id uid) (IdMap m) = IdMap $ IntMap.delete uid m
 
 filter :: (b -> Bool) -> IdMap a b -> IdMap a b
 filter f (IdMap m) = IdMap $ IntMap.filter f m
+
+keys :: IdMap a b -> [Id a]
+keys (IdMap m) = Id <$> IntMap.keys m

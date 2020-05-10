@@ -8,8 +8,10 @@ module CSDC.DAO.Types
     -- Messages
   , Message (..)
   , MessageStatus (..)
+  , MessageType (..)
   , Reply (..)
   , ReplyStatus (..)
+  , ReplyType (..)
   , Inbox (..)
   ) where
 
@@ -59,20 +61,34 @@ data Subpart = Subpart
 -- Messages
 
 data MessageStatus = Waiting | Accepted | Rejected
+  deriving (Show, Eq, Ord)
 
-data Message a
-  = Invitation a Text MessageStatus
-  | Submission a Text MessageStatus
+data MessageType = Invitation | Submission
+  deriving (Show, Eq, Ord)
+
+data Message a = Message
+  { message_type :: MessageType
+  , message_text :: Text
+  , message_status :: MessageStatus
+  , message_value :: a
+  } deriving (Show, Eq)
 
 data ReplyStatus = Seen | NotSeen
+  deriving (Show, Eq, Ord)
 
-data Reply a
-  = Accept (Id (Message a)) Text ReplyStatus
-  | Reject (Id (Message a)) Text ReplyStatus
+data ReplyType = Accept | Reject
+  deriving (Show, Eq, Ord)
+
+data Reply a = Reply
+  { reply_type :: ReplyType
+  , reply_text :: Text
+  , reply_status :: ReplyStatus
+  , reply_id :: Id (Message a)
+  } deriving (Show, Eq)
 
 data Inbox = Inbox
   { inbox_messageMember :: IdMap' (Message Member)
   , inbox_replyMember :: IdMap' (Reply Member)
   , inbox_messageSubpart :: IdMap' (Message Subpart)
   , inbox_replySubpart :: IdMap' (Reply Subpart)
-  }
+  } deriving (Show, Eq)

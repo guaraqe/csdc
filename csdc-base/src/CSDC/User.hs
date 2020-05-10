@@ -16,7 +16,12 @@ module CSDC.User
 
 import CSDC.Auth (UserToken)
 import CSDC.Auth.User (User (..))
-import CSDC.DAO.Class (HasDAO (..), HasCRUD (..), HasRelation (..))
+import CSDC.DAO.Class
+  ( HasDAO (..)
+  , HasCRUD (..)
+  , HasRelation (..)
+  , HasMessage (..)
+  )
 import CSDC.DAO.Types (Person (..), Unit (..), Member (..), Subpart (..))
 import CSDC.Data.Id (Id)
 
@@ -52,6 +57,8 @@ deriving newtype instance HasCRUD Person m => HasCRUD Person (UserT m)
 deriving newtype instance HasCRUD Unit m => HasCRUD Unit (UserT m)
 deriving newtype instance HasRelation Member m => HasRelation Member (UserT m)
 deriving newtype instance HasRelation Subpart m => HasRelation Subpart (UserT m)
+deriving newtype instance HasMessage Member m => HasMessage Member (UserT m)
+deriving newtype instance HasMessage Subpart m => HasMessage Subpart (UserT m)
 
 instance HasDAO m => HasUser (UserT m) where
   getUser = UserT $
