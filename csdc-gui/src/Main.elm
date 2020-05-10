@@ -6,6 +6,7 @@ import CSDC.Component.Menu as Menu
 import CSDC.Component.NewMember as NewMember
 import CSDC.Component.NewPerson as NewPerson
 import CSDC.Component.NewUnit as NewUnit
+import CSDC.Component.NewSubpart as NewSubpart
 import CSDC.Component.Studio as Studio
 import CSDC.Component.ViewUnit as ViewUnit
 import CSDC.Notification as Notification
@@ -44,6 +45,7 @@ type alias Model =
   , menu : Menu.Model
   , newMember : NewMember.Model
   , newPerson : NewPerson.Model
+  , newSubpart : NewSubpart.Model
   , newUnit : NewUnit.Model
   , viewUnit : ViewUnit.Model
   , explorer : Explorer.Model
@@ -61,6 +63,7 @@ init _ =
       , explorer = explorer
       , newMember = NewMember.initial
       , newPerson = NewPerson.initial
+      , newSubpart = NewSubpart.initial
       , newUnit = NewUnit.initial
       , studio = Studio.initial
       , viewUnit = ViewUnit.initial
@@ -78,6 +81,7 @@ init _ =
 type Msg
   = NewMemberMsg NewMember.Msg
   | NewPersonMsg NewPerson.Msg
+  | NewSubpartMsg NewSubpart.Msg
   | NewUnitMsg NewUnit.Msg
   | MenuMsg Menu.Msg
   | ExplorerMsg Explorer.Msg
@@ -195,6 +199,13 @@ update msg model =
         , Cmd.map NewMemberMsg cmd
         )
 
+    NewSubpartMsg m ->
+      let
+        (newSubpart, cmd) = NewSubpart.update m model.newSubpart
+      in
+        ( { model | newSubpart = newSubpart }
+        , Cmd.map NewSubpartMsg cmd
+        )
 
 --------------------------------------------------------------------------------
 -- Subscriptions
@@ -242,6 +253,7 @@ mainPanel model =
         [ Element.map NewPersonMsg <| NewPerson.view model.newPerson
         , Element.map NewUnitMsg <| NewUnit.view model.newUnit
         , Element.map NewMemberMsg <| NewMember.view model.newMember
+        , Element.map NewSubpartMsg <| NewSubpart.view model.newSubpart
         ]
 
 
