@@ -206,14 +206,14 @@ view mid model =
       [ row
           [ Font.bold, Font.size 30 ]
           [ text "Unit Viewer" ]
-      , editable
+      , editableText
           { canEdit = canEdit mid model
           , mode = model.editName
           , label = "Name"
           , value = unit.name
           , event = EditName
           }
-      , editable
+      , editableMultiline
           { canEdit = canEdit mid model
           , mode = model.editDescription
           , label = "Description"

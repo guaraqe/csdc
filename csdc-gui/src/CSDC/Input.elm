@@ -2,7 +2,8 @@ module CSDC.Input exposing
   ( button
   , EditableMode (..)
   , EditableMsg (..)
-  , editable
+  , editableText
+  , editableMultiline
   )
 
 import Element exposing (Element)
@@ -39,14 +40,14 @@ type EditableMsg
   | EditableSave
   | EditableUpdate String
 
-editable :
+editableText :
   { canEdit : Bool
   , mode : EditableMode
   , label : String
   , value : String
   , event : EditableMsg -> msg
   } -> Element msg
-editable options =
+editableText options =
   Element.row [ Element.spacing 10 ] <|
     case options.canEdit of
       False ->
@@ -76,15 +77,68 @@ editable options =
                   { onChange = options.event << EditableUpdate
                   , text = options.value
                   , placeholder = Nothing
-                  , label = Input.labelAbove [] (Element.text options.label)
+                  , label = Input.labelAbove [] <|
+                      Element.row [ Element.spacing 10 ]
+                        [ Element.text options.label
+                        , Input.button
+                          [ Font.color <| Element.rgb255 142 151 164
+                          ]
+                          { onPress = Just <| options.event <| EditableSave
+                          , label = Element.text "Save"
+                          }
+                        ]
                   }
+                ]
+            ]
+
+editableMultiline :
+  { canEdit : Bool
+  , mode : EditableMode
+  , label : String
+  , value : String
+  , event : EditableMsg -> msg
+  } -> Element msg
+editableMultiline options =
+  Element.row [ Element.spacing 10 ] <|
+    case options.canEdit of
+      False ->
+        [ Element.text options.value
+        ]
+      True ->
+        case options.mode of
+          EditableModeShow ->
+            [ Element.column []
+                [ Element.text options.value
                 ]
             , Element.column []
                 [ Input.button
                   [ Font.color <| Element.rgb255 142 151 164
                   ]
-                  { onPress = Just <| options.event <| EditableSave
-                  , label = Element.text "Save"
+                  { onPress = Just <| options.event <| EditableEdit
+                  , label = Element.text "Edit"
+                  }
+                ]
+            ]
+
+          EditableModeEdit ->
+            [ Element.column
+                [ Element.width Element.fill
+                ]
+                [ Input.multiline []
+                  { onChange = options.event << EditableUpdate
+                  , text = options.value
+                  , placeholder = Nothing
+                  , spellcheck = False
+                  , label = Input.labelAbove [] <|
+                      Element.row [ Element.spacing 10 ]
+                        [ Element.text options.label
+                        , Input.button
+                          [ Font.color <| Element.rgb255 142 151 164
+                          ]
+                          { onPress = Just <| options.event <| EditableSave
+                          , label = Element.text "Save"
+                          }
+                        ]
                   }
                 ]
             ]

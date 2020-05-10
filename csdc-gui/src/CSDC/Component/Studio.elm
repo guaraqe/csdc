@@ -9,16 +9,14 @@ module CSDC.Component.Studio exposing
 
 import CSDC.API as API
 import CSDC.Component.Panel as Panel
+import CSDC.Component.PreviewUnit as PreviewUnit
 import CSDC.Input exposing (button)
 import CSDC.Notification as Notification
 import CSDC.Notification exposing (Notification)
 import CSDC.Types exposing (..)
 
 import Element exposing (..)
-import Element.Background as Background
-import Element.Border as Border
 import Element.Font as Font
-import Element.Input as Input
 import String
 import Tuple exposing (pair)
 
@@ -182,36 +180,7 @@ view model =
                 of
                 Nothing ->
                   [ text "Error." ]
-                Just (Member member, unit) ->
-                  [ column
-                     [ height fill
-                     , width fill
-                     , spacing 10
-                     , Border.width 1
-                     , Border.color <| rgb255 92 99 118
-                     , Border.rounded 5
-                     ]
-                     [ row
-                        [ spacing 10
-                        , alignTop
-                        , Background.color <| rgb255 92 99 118
-                        , padding 10
-                        , width fill
-                        ]
-                        [ column
-                            [ Font.size 24 ]
-                            [ text unit.name ]
-                        , column
-                            [ alignRight ]
-                            [ button (ViewSelected member.unit) "View Unit" ]
-                        ]
-                     , row
-                        [ height fill
-                        , padding 10
-                        ]
-                        [ text unit.description
-                        ]
-                     ]
-                  ]
+                Just (member, unit) ->
+                  PreviewUnit.view member unit ViewSelected
       ] ++
       Notification.view model.notification
