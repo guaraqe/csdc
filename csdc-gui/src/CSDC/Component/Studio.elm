@@ -15,6 +15,8 @@ import CSDC.Notification exposing (Notification)
 import CSDC.Types exposing (..)
 
 import Element exposing (..)
+import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import String
@@ -181,8 +183,35 @@ view model =
                 Nothing ->
                   [ text "Error." ]
                 Just (Member member, unit) ->
-                  [ text unit.name
-                  , button (ViewSelected member.unit) "View Unit"
+                  [ column
+                     [ height fill
+                     , width fill
+                     , spacing 10
+                     , Border.width 1
+                     , Border.color <| rgb255 92 99 118
+                     , Border.rounded 5
+                     ]
+                     [ row
+                        [ spacing 10
+                        , alignTop
+                        , Background.color <| rgb255 92 99 118
+                        , padding 10
+                        , width fill
+                        ]
+                        [ column
+                            [ Font.size 24 ]
+                            [ text unit.name ]
+                        , column
+                            [ alignRight ]
+                            [ button (ViewSelected member.unit) "View Unit" ]
+                        ]
+                     , row
+                        [ height fill
+                        , padding 10
+                        ]
+                        [ text unit.description
+                        ]
+                     ]
                   ]
       ] ++
       Notification.view model.notification
