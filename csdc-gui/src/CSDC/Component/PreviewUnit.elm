@@ -10,8 +10,8 @@ import Element.Font as Font
 import Element.Background as Background
 import Element.Border as Border
 
-view : Member -> Unit -> (Id Unit -> msg) -> List (Element msg)
-view (Member member) unit event =
+view : Unit -> msg -> List (Element msg)
+view unit event =
   [ column
      [ height fill
      , width fill
@@ -32,7 +32,7 @@ view (Member member) unit event =
             [ text unit.name ]
         , column
             [ alignRight ]
-            [ button (event member.unit) "View Unit" ]
+            [ button event "View Unit" ]
         ]
      , row
         [ height fill

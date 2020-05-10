@@ -180,7 +180,7 @@ view model =
                 of
                 Nothing ->
                   [ text "Error." ]
-                Just (member, unit) ->
-                  PreviewUnit.view member unit ViewSelected
+                Just (Member member, unit) ->
+                  PreviewUnit.view unit (ViewSelected member.unit)
       ] ++
       Notification.view model.notification

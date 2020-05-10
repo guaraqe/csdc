@@ -8,6 +8,7 @@ module CSDC.Component.ViewUnit exposing
 
 import CSDC.API as API
 import CSDC.Component.Panel as Panel
+import CSDC.Component.PreviewUnit as PreviewUnit
 import CSDC.Input exposing (..)
 import CSDC.Notification as Notification
 import CSDC.Notification exposing (Notification)
@@ -69,6 +70,7 @@ type Msg
   | MembersMsg (Panel.Msg (Id Member))
   | EditName EditableMsg
   | EditDescription EditableMsg
+  | ViewSelected (Id Unit)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -124,6 +126,11 @@ update msg model =
               Just (id, unit) ->
                 Cmd.map APIMsg <| API.updateUnit id unit
           )
+
+    ViewSelected id ->
+      ( model
+      , Cmd.map APIMsg <| API.selectUnit id
+      )
 
     APIMsg apimsg ->
       case apimsg of
@@ -241,10 +248,11 @@ view mid model =
             row
               [ height <| fillPortion 1
               , width fill
-              ]
-              [ case idMapLookup id model.subparts of
-                  Nothing -> text "Error."
-                  Just subunit -> text subunit.value.name
-              ]
+              ] <|
+              case idMapLookup id model.subparts of
+                Nothing ->
+                  [ text "Loading..." ]
+                Just subunit ->
+                  PreviewUnit.view subunit.value (ViewSelected subunit.id)
       ] ++
       Notification.view model.notification
