@@ -1,4 +1,4 @@
-module CSDC.Component.NewMember exposing
+module CSDC.Component.Admin.NewUnit exposing
   ( Model
   , initial
   , Msg
@@ -21,15 +21,13 @@ import String
 -- Model
 
 type alias Model =
-  { person : Maybe (Id Person)
-  , unit : Maybe (Id Unit)
+  { chair : Maybe (Id Person)
   , notification : Notification
   }
 
 initial : Model
 initial =
-  { person = Nothing
-  , unit = Nothing
+  { chair = Nothing
   , notification = Notification.Empty
   }
 
@@ -37,8 +35,7 @@ initial =
 -- Update
 
 type Msg
-  = InputPerson String
-  | InputUnit String
+  = InputId String
   | APIMsg API.Msg
   | Submit
   | Reset
@@ -46,48 +43,31 @@ type Msg
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    InputPerson str ->
-      let
-        newPerson =
-          case String.toInt str of
-            Nothing -> Nothing
-            Just n -> Just (Id n)
-      in
-        ( { model | person = newPerson }
-        , Cmd.none
-        )
-
-    InputUnit str ->
-      let
-        newUnit =
-          case String.toInt str of
-            Nothing -> Nothing
-            Just n -> Just (Id n)
-      in
-        ( { model | unit = newUnit }
-        , Cmd.none
-        )
+    InputId chair ->
+      ( { model | chair = idFromString chair }
+      , Cmd.none
+      )
 
     Submit ->
-      case Maybe.map2 makeMember model.person model.unit of
+      case model.chair of
         Nothing ->
-          ( { model | notification = Notification.Error "Input wrong!" }
+          ( { model | notification = Notification.Error "Chair must not be empty!" }
           , Cmd.none
           )
-        Just member ->
+        Just id ->
           ( { model | notification = Notification.Processing }
-          , Cmd.map APIMsg <| API.insertMember member
+          , Cmd.map APIMsg <| API.createUnit id
           )
 
     APIMsg apimsg ->
       case apimsg of
-        API.InsertMember result ->
+        API.CreateUnit result ->
           case result of
             Err err ->
               ( { model | notification = Notification.HttpError err }
               , Cmd.none
               )
-            Ok _ ->
+            Ok memberWithId ->
               ( { initial | notification = Notification.Success }
               , Notification.reset Reset
               )
@@ -107,22 +87,13 @@ view model =
   column [ width <| fillPortion 2, padding 10, spacing 10 ] <|
     [ row
         [ Font.bold, Font.size 30 ]
-        [ text "New Member" ]
+        [ text "New Unit" ]
     , Input.text
         []
-        { onChange = InputPerson
+        { onChange = InputId
         , placeholder = Nothing
-        , label = Input.labelAbove [] (text "Person")
-        , text = Maybe.withDefault "" (Maybe.map idToString model.person)
+        , label = Input.labelAbove [] (text "Chair Id")
+        , text = Maybe.withDefault "" (Maybe.map idToString model.chair)
         }
-
-    , Input.text
-        []
-        { onChange = InputUnit
-        , placeholder = Nothing
-        , label = Input.labelAbove [] (text "Unit")
-        , text = Maybe.withDefault "" (Maybe.map idToString model.unit)
-        }
-
     , CSDC.Input.button Submit "Submit"
     ] ++ Notification.view model.notification

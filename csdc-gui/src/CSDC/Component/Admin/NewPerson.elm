@@ -1,4 +1,4 @@
-module CSDC.Component.NewSubpart exposing
+module CSDC.Component.Admin.NewPerson exposing
   ( Model
   , initial
   , Msg
@@ -21,15 +21,13 @@ import String
 -- Model
 
 type alias Model =
-  { child : Maybe (Id Unit)
-  , parent : Maybe (Id Unit)
+  { name : Maybe String
   , notification : Notification
   }
 
 initial : Model
 initial =
-  { child = Nothing
-  , parent = Nothing
+  { name = Nothing
   , notification = Notification.Empty
   }
 
@@ -37,8 +35,7 @@ initial =
 -- Update
 
 type Msg
-  = InputChild String
-  | InputParent String
+  = InputName String
   | APIMsg API.Msg
   | Submit
   | Reset
@@ -46,42 +43,31 @@ type Msg
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    InputChild str ->
+    InputName name ->
       let
-        newPerson =
-          case String.toInt str of
-            Nothing -> Nothing
-            Just n -> Just (Id n)
+        newName =
+          if String.isEmpty name
+          then Nothing
+          else Just name
       in
-        ( { model | child = newPerson }
-        , Cmd.none
-        )
-
-    InputParent str ->
-      let
-        newUnit =
-          case String.toInt str of
-            Nothing -> Nothing
-            Just n -> Just (Id n)
-      in
-        ( { model | parent = newUnit }
+        ( { model | name = newName }
         , Cmd.none
         )
 
     Submit ->
-      case Maybe.map2 Subpart model.child model.parent of
+      case model.name of
         Nothing ->
-          ( { model | notification = Notification.Error "Input wrong!" }
+          ( { model | notification = Notification.Error "Name must not be empty!" }
           , Cmd.none
           )
-        Just member ->
+        Just name ->
           ( { model | notification = Notification.Processing }
-          , Cmd.map APIMsg <| API.insertSubpart member
+          , Cmd.map APIMsg <| API.insertPerson (Person name "ORCID" "")
           )
 
     APIMsg apimsg ->
       case apimsg of
-        API.InsertSubpart result ->
+        API.InsertPerson result ->
           case result of
             Err err ->
               ( { model | notification = Notification.HttpError err }
@@ -107,22 +93,13 @@ view model =
   column [ width <| fillPortion 2, padding 10, spacing 10 ] <|
     [ row
         [ Font.bold, Font.size 30 ]
-        [ text "New Subpart" ]
+        [ text "New Person" ]
     , Input.text
         []
-        { onChange = InputChild
+        { onChange = InputName
         , placeholder = Nothing
-        , label = Input.labelAbove [] (text "Child")
-        , text = Maybe.withDefault "" (Maybe.map idToString model.child)
+        , label = Input.labelAbove [] (text "Name")
+        , text = Maybe.withDefault "" model.name
         }
-
-    , Input.text
-        []
-        { onChange = InputParent
-        , placeholder = Nothing
-        , label = Input.labelAbove [] (text "Parent")
-        , text = Maybe.withDefault "" (Maybe.map idToString model.parent)
-        }
-
     , CSDC.Input.button Submit "Submit"
     ] ++ Notification.view model.notification

@@ -1,12 +1,9 @@
 module Main exposing (..)
 
 import CSDC.API as API
+import CSDC.Component.Admin as Admin
 import CSDC.Component.Explorer as Explorer
 import CSDC.Component.Menu as Menu
-import CSDC.Component.NewMember as NewMember
-import CSDC.Component.NewPerson as NewPerson
-import CSDC.Component.NewUnit as NewUnit
-import CSDC.Component.NewSubpart as NewSubpart
 import CSDC.Component.Studio as Studio
 import CSDC.Component.ViewUnit as ViewUnit
 import CSDC.Notification as Notification
@@ -43,10 +40,7 @@ main =
 type alias Model =
   { id : Maybe UserId
   , menu : Menu.Model
-  , newMember : NewMember.Model
-  , newPerson : NewPerson.Model
-  , newSubpart : NewSubpart.Model
-  , newUnit : NewUnit.Model
+  , admin : Admin.Model
   , viewUnit : ViewUnit.Model
   , explorer : Explorer.Model
   , studio : Studio.Model
@@ -61,10 +55,7 @@ init _ =
     ( { id = Nothing
       , menu = Menu.initial
       , explorer = explorer
-      , newMember = NewMember.initial
-      , newPerson = NewPerson.initial
-      , newSubpart = NewSubpart.initial
-      , newUnit = NewUnit.initial
+      , admin = Admin.initial
       , studio = Studio.initial
       , viewUnit = ViewUnit.initial
       , notification = Notification.Empty
@@ -79,10 +70,7 @@ init _ =
 -- Update
 
 type Msg
-  = NewMemberMsg NewMember.Msg
-  | NewPersonMsg NewPerson.Msg
-  | NewSubpartMsg NewSubpart.Msg
-  | NewUnitMsg NewUnit.Msg
+  = AdminMsg Admin.Msg
   | MenuMsg Menu.Msg
   | ExplorerMsg Explorer.Msg
   | ViewUnitMsg ViewUnit.Msg
@@ -92,6 +80,14 @@ type Msg
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
+    AdminMsg m ->
+      let
+        (admin, cmd) = Admin.update m model.admin
+      in
+        ( { model | admin = admin }
+        , Cmd.map AdminMsg cmd
+        )
+
     MenuMsg m ->
       let
         menu = Menu.update m model.menu
@@ -173,40 +169,6 @@ update msg model =
 
         _ -> (model, Cmd.none)
 
-    -- Admin
-
-    NewUnitMsg m ->
-      let
-        (newUnit, cmd) = NewUnit.update m model.newUnit
-      in
-        ( { model | newUnit = newUnit }
-        , Cmd.map NewUnitMsg cmd
-        )
-
-    NewPersonMsg m ->
-      let
-        (newPerson, cmd) = NewPerson.update m model.newPerson
-      in
-        ( { model | newPerson = newPerson }
-        , Cmd.map NewPersonMsg cmd
-        )
-
-    NewMemberMsg m ->
-      let
-        (newMember, cmd) = NewMember.update m model.newMember
-      in
-        ( { model | newMember = newMember }
-        , Cmd.map NewMemberMsg cmd
-        )
-
-    NewSubpartMsg m ->
-      let
-        (newSubpart, cmd) = NewSubpart.update m model.newSubpart
-      in
-        ( { model | newSubpart = newSubpart }
-        , Cmd.map NewSubpartMsg cmd
-        )
-
 --------------------------------------------------------------------------------
 -- Subscriptions
 
@@ -250,10 +212,5 @@ mainPanel model =
         ViewUnit.view model.id model.viewUnit
 
       Menu.Admin ->
-        [ Element.map NewPersonMsg <| NewPerson.view model.newPerson
-        , Element.map NewUnitMsg <| NewUnit.view model.newUnit
-        , Element.map NewMemberMsg <| NewMember.view model.newMember
-        , Element.map NewSubpartMsg <| NewSubpart.view model.newSubpart
-        ]
-
-
+        List.map (Element.map AdminMsg) <|
+        Admin.view model.admin

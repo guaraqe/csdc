@@ -1,4 +1,4 @@
-module CSDC.Component.NewPerson exposing
+module CSDC.Component.Admin.NewMember exposing
   ( Model
   , initial
   , Msg
@@ -21,13 +21,15 @@ import String
 -- Model
 
 type alias Model =
-  { name : Maybe String
+  { person : Maybe (Id Person)
+  , unit : Maybe (Id Unit)
   , notification : Notification
   }
 
 initial : Model
 initial =
-  { name = Nothing
+  { person = Nothing
+  , unit = Nothing
   , notification = Notification.Empty
   }
 
@@ -35,7 +37,8 @@ initial =
 -- Update
 
 type Msg
-  = InputName String
+  = InputPerson String
+  | InputUnit String
   | APIMsg API.Msg
   | Submit
   | Reset
@@ -43,31 +46,42 @@ type Msg
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    InputName name ->
+    InputPerson str ->
       let
-        newName =
-          if String.isEmpty name
-          then Nothing
-          else Just name
+        newPerson =
+          case String.toInt str of
+            Nothing -> Nothing
+            Just n -> Just (Id n)
       in
-        ( { model | name = newName }
+        ( { model | person = newPerson }
+        , Cmd.none
+        )
+
+    InputUnit str ->
+      let
+        newUnit =
+          case String.toInt str of
+            Nothing -> Nothing
+            Just n -> Just (Id n)
+      in
+        ( { model | unit = newUnit }
         , Cmd.none
         )
 
     Submit ->
-      case model.name of
+      case Maybe.map2 makeMember model.person model.unit of
         Nothing ->
-          ( { model | notification = Notification.Error "Name must not be empty!" }
+          ( { model | notification = Notification.Error "Input wrong!" }
           , Cmd.none
           )
-        Just name ->
+        Just member ->
           ( { model | notification = Notification.Processing }
-          , Cmd.map APIMsg <| API.insertPerson (Person name "ORCID" "")
+          , Cmd.map APIMsg <| API.insertMember member
           )
 
     APIMsg apimsg ->
       case apimsg of
-        API.InsertPerson result ->
+        API.InsertMember result ->
           case result of
             Err err ->
               ( { model | notification = Notification.HttpError err }
@@ -93,13 +107,22 @@ view model =
   column [ width <| fillPortion 2, padding 10, spacing 10 ] <|
     [ row
         [ Font.bold, Font.size 30 ]
-        [ text "New Person" ]
+        [ text "New Member" ]
     , Input.text
         []
-        { onChange = InputName
+        { onChange = InputPerson
         , placeholder = Nothing
-        , label = Input.labelAbove [] (text "Name")
-        , text = Maybe.withDefault "" model.name
+        , label = Input.labelAbove [] (text "Person")
+        , text = Maybe.withDefault "" (Maybe.map idToString model.person)
         }
+
+    , Input.text
+        []
+        { onChange = InputUnit
+        , placeholder = Nothing
+        , label = Input.labelAbove [] (text "Unit")
+        , text = Maybe.withDefault "" (Maybe.map idToString model.unit)
+        }
+
     , CSDC.Input.button Submit "Submit"
     ] ++ Notification.view model.notification
