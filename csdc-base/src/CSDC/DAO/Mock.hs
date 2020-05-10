@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 
 module CSDC.DAO.Mock
   ( Mock
@@ -13,7 +14,11 @@ import CSDC.Data.Id (Id (..), WithId (..))
 import CSDC.Data.IdMap (IdMap)
 import CSDC.Data.RIO (RIO, runRIO)
 import CSDC.DAO.Types (Person (..), Unit (..), Member (..), Subpart (..))
-import CSDC.DAO.Class (HasDAO (..))
+import CSDC.DAO.Class
+  ( HasDAO (..)
+  , HasCRUD (..)
+  , HasRelation (..)
+  )
 
 import qualified CSDC.Auth.ORCID as ORCID
 import qualified CSDC.Data.IdMap as IdMap
@@ -75,40 +80,11 @@ runMock :: MonadIO m => MVar Store -> Mock m a -> m a
 runMock var (Mock m) = runRIO var m
 
 instance MonadIO m => HasDAO (Mock m) where
-
-  -- Person manipulation
-
-  selectPerson uid =
-    IdMap.lookup uid <$> use store_person
-
   selectPersonORCID uid =
     fmap fst <$> IdMap.find (\p -> person_orcid p == uid) <$> use store_person
 
-  insertPerson p =
-    stating store_person (IdMap.insertNew p)
-
-  updatePerson uid p =
-    modifying store_person (IdMap.insert uid p)
-
-  deletePerson uid =
-    modifying store_person (IdMap.delete uid)
-
-  -- Unit manipulation
-
   rootUnit =
     use store_root
-
-  selectUnit uid =
-    IdMap.lookup uid <$> use store_unit
-
-  insertUnit u =
-    stating store_unit (IdMap.insertNew u)
-
-  updateUnit uid u =
-    modifying store_unit (IdMap.insert uid u)
-
-  deleteUnit uid =
-    modifying store_unit (IdMap.delete uid)
 
   -- XXX: This implementation is horrible.
   createUnit personId = do
@@ -116,41 +92,67 @@ instance MonadIO m => HasDAO (Mock m) where
         dummyUnit = Unit "" "" dummyMemberId
     unitId <- stating store_unit (IdMap.insertNew dummyUnit)
     let member = Member personId unitId
-    memberId <- insertMember member
+    memberId <- insertRelation @Member member
     let unit = Unit "New Unit" "Unit Description" memberId
-    updateUnit unitId unit
+    update @Unit unitId unit
     pure $ WithId memberId member
 
-  -- Member manipulation
 
-  selectMemberPerson uid = do
+instance MonadIO m => HasCRUD Person (Mock m) where
+  select uid =
+    IdMap.lookup uid <$> use store_person
+
+  insert p =
+    stating store_person (IdMap.insertNew p)
+
+  update uid p =
+    modifying store_person (IdMap.insert uid p)
+
+  delete uid =
+    modifying store_person (IdMap.delete uid)
+
+instance MonadIO m => HasCRUD Unit (Mock m) where
+  select uid =
+    IdMap.lookup uid <$> use store_unit
+
+  insert u =
+    stating store_unit (IdMap.insertNew u)
+
+  update uid u =
+    modifying store_unit (IdMap.insert uid u)
+
+  delete uid =
+    modifying store_unit (IdMap.delete uid)
+
+instance MonadIO m => HasRelation Member (Mock m) where
+  selectRelationL uid = do
     let cond (Member u _) = u == uid
     IdMap.filter cond <$> use store_member
 
-  selectMemberUnit uid = do
+  selectRelationR uid = do
     let cond (Member _ u) = u == uid
     IdMap.filter cond <$> use store_member
 
-  insertMember m =
+  insertRelation m =
     stating store_member (IdMap.insertNew m)
 
-  deleteMember uid =
+  deleteRelation uid =
     modifying store_member (IdMap.delete uid)
 
-  -- Subpart manipulation
+instance MonadIO m => HasRelation Subpart (Mock m) where
 
-  selectSubpartChild uid = do
+  selectRelationL uid = do
     let cond (Subpart u _) = u == uid
     IdMap.filter cond <$> use store_subpart
 
-  selectSubpartParent uid = do
+  selectRelationR uid = do
     let cond (Subpart _ u) = u == uid
     IdMap.filter cond <$> use store_subpart
 
-  insertSubpart s =
+  insertRelation s =
     stating store_subpart (IdMap.insertNew s)
 
-  deleteSubpart uid =
+  deleteRelation uid =
     modifying store_subpart (IdMap.delete uid)
 
 --------------------------------------------------------------------------------

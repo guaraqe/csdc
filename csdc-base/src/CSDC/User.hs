@@ -1,5 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeApplications #-}
 
 module CSDC.User
   ( -- * Type
@@ -14,8 +16,8 @@ module CSDC.User
 
 import CSDC.Auth (UserToken)
 import CSDC.Auth.User (User (..))
-import CSDC.DAO.Class (HasDAO (..))
-import CSDC.DAO.Types (Person (..))
+import CSDC.DAO.Class (HasDAO (..), HasCRUD (..), HasRelation (..))
+import CSDC.DAO.Types (Person (..), Unit (..), Member (..), Subpart (..))
 import CSDC.Data.Id (Id)
 
 import qualified CSDC.Auth.ORCID as ORCID
@@ -46,6 +48,11 @@ newtype UserT m a = UserT (ReaderT UserToken m a)
     , HasDAO
     )
 
+deriving newtype instance HasCRUD Person m => HasCRUD Person (UserT m)
+deriving newtype instance HasCRUD Unit m => HasCRUD Unit (UserT m)
+deriving newtype instance HasRelation Member m => HasRelation Member (UserT m)
+deriving newtype instance HasRelation Subpart m => HasRelation Subpart (UserT m)
+
 instance HasDAO m => HasUser (UserT m) where
   getUser = UserT $
     ask >>= \case
@@ -62,7 +69,7 @@ instance HasDAO m => HasUser (UserT m) where
                 , person_description = ""
                 }
             in
-              User <$> insertPerson person
+              User <$> insert @Person person
           Just uid ->
             pure $ User uid
 

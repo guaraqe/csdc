@@ -1,5 +1,6 @@
 module CSDC.Data.IdMap
   ( IdMap (..)
+  , IdMap'
   , empty
   , lookup
   , find
@@ -25,6 +26,8 @@ import Prelude hiding (lookup, filter)
 newtype IdMap a b = IdMap { getIdMap :: IntMap b }
   deriving newtype (Show, Eq, Functor, Foldable, ToJSON, FromJSON)
   deriving stock (Traversable)
+
+type IdMap' a = IdMap a a
 
 empty :: IdMap a b
 empty = IdMap (IntMap.empty)

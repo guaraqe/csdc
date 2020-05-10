@@ -5,10 +5,17 @@ module CSDC.DAO.Types
     -- Relations
   , Member (..)
   , Subpart (..)
+    -- Messages
+  , Message (..)
+  , MessageStatus (..)
+  , Reply (..)
+  , ReplyStatus (..)
+  , Inbox (..)
   ) where
 
 import CSDC.Aeson (JSON (..))
 import CSDC.Data.Id (Id)
+import CSDC.Data.IdMap (IdMap')
 
 import qualified CSDC.Auth.ORCID as ORCID
 
@@ -47,3 +54,25 @@ data Subpart = Subpart
   , subpart_parent :: Id Unit
   } deriving (Show, Eq, Generic)
     deriving (FromJSON, ToJSON) via JSON Subpart
+
+--------------------------------------------------------------------------------
+-- Messages
+
+data MessageStatus = Waiting | Accepted | Rejected
+
+data Message a
+  = Invitation a Text MessageStatus
+  | Submission a Text MessageStatus
+
+data ReplyStatus = Seen | NotSeen
+
+data Reply a
+  = Accept (Id (Message a)) Text ReplyStatus
+  | Reject (Id (Message a)) Text ReplyStatus
+
+data Inbox = Inbox
+  { inbox_messageMember :: IdMap' (Message Member)
+  , inbox_replyMember :: IdMap' (Reply Member)
+  , inbox_messageSubpart :: IdMap' (Message Subpart)
+  , inbox_replySubpart :: IdMap' (Reply Subpart)
+  }
