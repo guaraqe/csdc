@@ -29,7 +29,7 @@ type alias Model =
   , member : IdMap Member Member
   , units : IdMap Member Unit
   , panelUnits : Panel.Model (Id Member)
-  , panelMessages : Panel.Model Int -- todo: actually implement messages
+  , panelMessages : Panel.Model InboxId
   , notification : Notification
   , inbox : Inbox
   }
@@ -62,7 +62,7 @@ setup id =
 type Msg
   = APIMsg API.Msg
   | UnitsMsg (Panel.Msg (Id Member))
-  | MessagesMsg (Panel.Msg Int)
+  | MessagesMsg (Panel.Msg InboxId)
   | CreateUnit
   | ViewSelected (Id Unit)
 
@@ -138,9 +138,13 @@ update msg model =
               )
 
             Ok inbox ->
-              ( { model | inbox = inbox }
-              , Cmd.none
-              )
+              let
+                panelMessages =
+                  Panel.update (Panel.SetItems <| inboxToPairs inbox) model.panelMessages
+              in
+                ( { model | inbox = inbox, panelMessages = panelMessages }
+                , Cmd.none
+                )
 
         _ ->
           (model, Cmd.none)
@@ -200,3 +204,25 @@ view model =
                   PreviewUnit.view unit (ViewSelected member.unit)
       ] ++
       Notification.view model.notification
+
+--------------------------------------------------------------------------------
+-- Helpers
+
+type InboxId
+  = MessageMemberId (Id (Message Member))
+  | ReplyMemberId (Id (Reply Member))
+  | MessageSubpartId (Id (Message Subpart))
+  | ReplySubpartId (Id (Reply Subpart))
+
+inboxToPairs : Inbox -> List (InboxId, String)
+inboxToPairs inbox =
+  let
+    fmm (id, Message m) = (MessageMemberId id, m.text)
+    frm (id, Reply r) = (ReplyMemberId id, r.text)
+    fms (id, Message m) = (MessageSubpartId id, m.text)
+    frs (id, Reply r) = (ReplySubpartId id, r.text)
+  in
+    List.map fmm (idMapToList inbox.messageMember) ++
+    List.map frm (idMapToList inbox.replyMember) ++
+    List.map fms (idMapToList inbox.messageSubpart) ++
+    List.map frs (idMapToList inbox.replySubpart)
