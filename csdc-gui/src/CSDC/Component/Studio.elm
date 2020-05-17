@@ -31,6 +31,7 @@ type alias Model =
   , panelUnits : Panel.Model (Id Member)
   , panelMessages : Panel.Model Int -- todo: actually implement messages
   , notification : Notification
+  , inbox : Inbox
   }
 
 initial : Model
@@ -42,14 +43,17 @@ initial =
   , panelUnits = Panel.initial "Units"
   , panelMessages = Panel.initial "Messages"
   , notification = Notification.Empty
+  , inbox = emptyInbox
   }
 
 setup : Id Person -> Cmd Msg
 setup id =
+  Cmd.map APIMsg <|
   Cmd.batch
-    [ Cmd.map APIMsg <| API.selectPerson id
-    , Cmd.map APIMsg <| API.selectMemberPerson id
-    , Cmd.map APIMsg <| API.unitsPerson id
+    [ API.selectPerson id
+    , API.selectMemberPerson id
+    , API.unitsPerson id
+    , API.personInbox id
     ]
 
 --------------------------------------------------------------------------------
@@ -123,6 +127,18 @@ update msg model =
                 panelUnits = Panel.update (Panel.SetItems pairs) model.panelUnits
               in
               ( { model | panelUnits = panelUnits, units = units }
+              , Cmd.none
+              )
+
+        API.PersonInbox result ->
+          case result of
+            Err err ->
+              ( { model | notification = Notification.HttpError err }
+              , Cmd.none
+              )
+
+            Ok inbox ->
+              ( { model | inbox = inbox }
               , Cmd.none
               )
 

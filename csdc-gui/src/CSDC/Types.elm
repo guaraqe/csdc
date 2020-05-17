@@ -352,6 +352,14 @@ type alias Inbox =
   , replySubpart : IdMap (Reply Subpart) (Reply Subpart)
   }
 
+emptyInbox : Inbox
+emptyInbox =
+  { messageMember = idMapEmpty
+  , replyMember = idMapEmpty
+  , messageSubpart = idMapEmpty
+  , replySubpart = idMapEmpty
+  }
+
 encodeInbox : Inbox -> Value
 encodeInbox inbox =
   Encoder.object
