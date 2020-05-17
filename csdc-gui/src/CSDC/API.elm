@@ -7,6 +7,8 @@ import Json.Decode as D
 --------------------------------------------------------------------------------
 -- Helpers
 
+type alias Response a = Result Http.Error a
+
 baseUrl : String
 baseUrl = "http://localhost:8080/api/"
 
@@ -18,29 +20,36 @@ decodeNull =
 -- Msg
 
 type Msg
-  = RootPerson (Result Http.Error UserId)
-  | UnitsPerson (Result Http.Error (IdMap Member Unit))
-  | SelectPerson (Result Http.Error Person)
-  | InsertPerson (Result Http.Error (Id Person))
-  | UpdatePerson (Result Http.Error ())
-  | DeletePerson (Result Http.Error ())
-  | RootUnit (Result Http.Error (Id Unit))
-  | GetUnitMembers (Result Http.Error (IdMap Member (WithId Person)))
-  | GetUnitChildren (Result Http.Error (IdMap Subpart (WithId Unit)))
-  | GetUnitParents (Result Http.Error (IdMap Subpart (WithId Unit)))
-  | CreateUnit (Result Http.Error (WithId Member))
-  | SelectUnit (Id Unit) (Result Http.Error Unit)
-  | InsertUnit (Result Http.Error (Id Unit))
-  | UpdateUnit (Result Http.Error ())
-  | DeleteUnit (Result Http.Error ())
-  | SelectMemberPerson (Result Http.Error (IdMap Member Member))
-  | SelectMemberUnit (Result Http.Error (IdMap Member Member))
-  | InsertMember (Result Http.Error (Id Member))
-  | DeleteMember (Result Http.Error ())
-  | SelectSubpartChild (Result Http.Error (IdMap Subpart Subpart))
-  | SelectSubpartParent (Result Http.Error (IdMap Subpart Subpart))
-  | InsertSubpart (Result Http.Error (Id Subpart))
-  | DeleteSubpart (Result Http.Error ())
+  = RootPerson (Response UserId)
+  | UnitsPerson (Response (IdMap Member Unit))
+  | SelectPerson (Response Person)
+  | InsertPerson (Response (Id Person))
+  | UpdatePerson (Response ())
+  | DeletePerson (Response ())
+  | RootUnit (Response (Id Unit))
+  | GetUnitMembers (Response (IdMap Member (WithId Person)))
+  | GetUnitChildren (Response (IdMap Subpart (WithId Unit)))
+  | GetUnitParents (Response (IdMap Subpart (WithId Unit)))
+  | CreateUnit (Response (WithId Member))
+  | SelectUnit (Id Unit) (Response Unit)
+  | InsertUnit (Response (Id Unit))
+  | UpdateUnit (Response ())
+  | DeleteUnit (Response ())
+  | SelectMemberPerson (Response (IdMap Member Member))
+  | SelectMemberUnit (Response (IdMap Member Member))
+  | InsertMember (Response (Id Member))
+  | DeleteMember (Response ())
+  | SelectSubpartChild (Response (IdMap Subpart Subpart))
+  | SelectSubpartParent (Response (IdMap Subpart Subpart))
+  | InsertSubpart (Response (Id Subpart))
+  | DeleteSubpart (Response ())
+  | SendMessageMember (Response ())
+  | SendReplyMember (Response ())
+  | ViewReplyMember (Response ())
+  | SendMessageSubpart (Response ())
+  | SendReplySubpart (Response ())
+  | ViewReplySubpart (Response ())
+  | PersonInbox (Response Inbox)
 
 --------------------------------------------------------------------------------
 -- Person
@@ -205,6 +214,64 @@ insertSubpart subpart =
 
 deleteSubpart : Id Subpart -> Cmd Msg
 deleteSubpart = delete "subpart" DeleteSubpart
+
+--------------------------------------------------------------------------------
+-- Message
+
+sendMessageMember : Message Member -> Cmd Msg
+sendMessageMember msg =
+  Http.post
+    { url = baseUrl ++ "message/member/send"
+    , body = Http.jsonBody <| encodeMessage encodeMember msg
+    , expect = Http.expectJson SendMessageMember decodeNull
+    }
+
+sendReplyMember : Reply Member -> Cmd Msg
+sendReplyMember reply =
+  Http.post
+    { url = baseUrl ++ "message/member/reply"
+    , body = Http.jsonBody <| encodeReply reply
+    , expect = Http.expectJson SendReplyMember decodeNull
+    }
+
+viewReplyMember : Id (Reply Member) -> Cmd Msg
+viewReplyMember id =
+  Http.post
+    { url = baseUrl ++ "message/member/view"
+    , body = Http.jsonBody <| encodeId id
+    , expect = Http.expectJson SendReplyMember decodeNull
+    }
+
+sendMessageSubpart : Message Subpart -> Cmd Msg
+sendMessageSubpart msg =
+  Http.post
+    { url = baseUrl ++ "message/subpart/send"
+    , body = Http.jsonBody <| encodeMessage encodeSubpart msg
+    , expect = Http.expectJson SendMessageSubpart decodeNull
+    }
+
+sendReplySubpart : Reply Subpart -> Cmd Msg
+sendReplySubpart reply =
+  Http.post
+    { url = baseUrl ++ "message/subpart/reply"
+    , body = Http.jsonBody <| encodeReply reply
+    , expect = Http.expectJson SendReplySubpart decodeNull
+    }
+
+viewReplySubpart : Id (Reply Subpart) -> Cmd Msg
+viewReplySubpart id =
+  Http.post
+    { url = baseUrl ++ "message/subpart/view"
+    , body = Http.jsonBody <| encodeId id
+    , expect = Http.expectJson SendReplySubpart decodeNull
+    }
+
+personInbox : Id Person -> Cmd Msg
+personInbox id =
+  Http.get
+    { url = baseUrl ++ "message/inbox/" ++ idToString id
+    , expect = Http.expectJson PersonInbox decodeInbox
+    }
 
 --------------------------------------------------------------------------------
 -- Delete
