@@ -10,7 +10,8 @@ module CSDC.DAO.Class
   , HasMessage (..)
   , getUserUnits
   , getUnitMembers
-  , getUnitSubparts
+  , getUnitChildren
+  , getUnitParents
   ) where
 
 import CSDC.Data.Id (Id, WithId (..))
@@ -117,11 +118,20 @@ getUnitMembers uid = do
     Nothing -> pure IdMap.empty
     Just m -> pure m
 
-getUnitSubparts :: HasDAO m => Id Unit -> m (IdMap Subpart (WithId Unit))
-getUnitSubparts uid = do
+getUnitChildren :: HasDAO m => Id Unit -> m (IdMap Subpart (WithId Unit))
+getUnitChildren uid = do
   subparts <- selectRelationR @Subpart uid
   pairs <- forM subparts $ \(Subpart childId _) ->
     fmap (WithId childId) <$> select @Unit childId
+  case sequence pairs of
+    Nothing -> pure IdMap.empty
+    Just m -> pure m
+
+getUnitParents :: HasDAO m => Id Unit -> m (IdMap Subpart (WithId Unit))
+getUnitParents uid = do
+  subparts <- selectRelationL @Subpart uid
+  pairs <- forM subparts $ \(Subpart _ parentId) ->
+    fmap (WithId parentId) <$> select @Unit parentId
   case sequence pairs of
     Nothing -> pure IdMap.empty
     Just m -> pure m

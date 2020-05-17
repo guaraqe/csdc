@@ -65,7 +65,8 @@ servePersonAPI =
 type UnitAPI =
        "unit" :> "root" :> Get '[JSON] (Id Unit)
   :<|> "unit" :> Capture "id" (Id Unit) :> "members" :> GetJSON (IdMap Member (WithId Person))
-  :<|> "unit" :> Capture "id" (Id Unit) :> "subparts" :> GetJSON (IdMap Subpart (WithId Unit))
+  :<|> "unit" :> Capture "id" (Id Unit) :> "children" :> GetJSON (IdMap Subpart (WithId Unit))
+  :<|> "unit" :> Capture "id" (Id Unit) :> "parents" :> GetJSON (IdMap Subpart (WithId Unit))
   :<|> "unit" :> "create" :> PostJSON (Id Person) (WithId Member)
   :<|> CRUD "unit" Unit
 
@@ -73,7 +74,8 @@ serveUnitAPI :: HasDAO m => ServerT UnitAPI m
 serveUnitAPI =
        rootUnit
   :<|> getUnitMembers
-  :<|> getUnitSubparts
+  :<|> getUnitChildren
+  :<|> getUnitParents
   :<|> createUnit
   :<|> serveCRUD
 

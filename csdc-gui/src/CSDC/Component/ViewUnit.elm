@@ -144,7 +144,7 @@ update msg model =
               ( { model | id = Just id, unit = Just unit }
               , Cmd.batch
                   [ Cmd.map APIMsg <| API.getUnitMembers id
-                  , Cmd.map APIMsg <| API.getUnitSubparts id
+                  , Cmd.map APIMsg <| API.getUnitChildren id
                   ]
               )
 
@@ -177,7 +177,7 @@ update msg model =
                 , Cmd.none
                 )
 
-        API.GetUnitSubparts result ->
+        API.GetUnitChildren result ->
           case result of
             Err err ->
               ( { model | notification = Notification.HttpError err }

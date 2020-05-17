@@ -26,7 +26,8 @@ type Msg
   | DeletePerson (Result Http.Error ())
   | RootUnit (Result Http.Error (Id Unit))
   | GetUnitMembers (Result Http.Error (IdMap Member (WithId Person)))
-  | GetUnitSubparts (Result Http.Error (IdMap Subpart (WithId Unit)))
+  | GetUnitChildren (Result Http.Error (IdMap Subpart (WithId Unit)))
+  | GetUnitParents (Result Http.Error (IdMap Subpart (WithId Unit)))
   | CreateUnit (Result Http.Error (WithId Member))
   | SelectUnit (Id Unit) (Result Http.Error Unit)
   | InsertUnit (Result Http.Error (Id Unit))
@@ -101,11 +102,18 @@ getUnitMembers id =
     , expect = Http.expectJson GetUnitMembers (decodeIdMap (decodeWithId decodePerson))
     }
 
-getUnitSubparts : Id Unit -> Cmd Msg
-getUnitSubparts id =
+getUnitChildren : Id Unit -> Cmd Msg
+getUnitChildren id =
   Http.get
-    { url = baseUrl ++ "unit/" ++ idToString id ++ "/subparts"
-    , expect = Http.expectJson GetUnitSubparts (decodeIdMap (decodeWithId decodeUnit))
+    { url = baseUrl ++ "unit/" ++ idToString id ++ "/children"
+    , expect = Http.expectJson GetUnitChildren (decodeIdMap (decodeWithId decodeUnit))
+    }
+
+getUnitParents : Id Unit -> Cmd Msg
+getUnitParents id =
+  Http.get
+    { url = baseUrl ++ "unit/" ++ idToString id ++ "/parents"
+    , expect = Http.expectJson GetUnitParents (decodeIdMap (decodeWithId decodeUnit))
     }
 
 createUnit : Id Person -> Cmd Msg
