@@ -113,11 +113,13 @@ serveSubpartAPI = serveREL
 type MessageAPI =
        "member" :> MSG Member
   :<|> "subpart" :> MSG Subpart
+  :<|> "inbox" :> CaptureId Person :> GetJSON Inbox
 
 serveMessageAPI :: HasDAO m => ServerT MessageAPI m
 serveMessageAPI =
        serveMSG
   :<|> serveMSG
+  :<|> inboxPerson
 
 --------------------------------------------------------------------------------
 -- API
