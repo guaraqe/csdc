@@ -4,6 +4,7 @@ module CSDC.Component.Panel exposing
   , Msg (..)
   , update
   , view
+  , getItems
   , getSelected
   )
 
@@ -34,6 +35,9 @@ initial name = Model
 
 getSelected : Model i -> Maybe i
 getSelected (Model m) = m.selected
+
+getItems : Model i -> List (i, String)
+getItems (Model m) = m.items
 
 --------------------------------------------------------------------------------
 -- Update

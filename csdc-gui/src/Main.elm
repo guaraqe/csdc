@@ -97,12 +97,18 @@ update msg model =
         )
 
     ExplorerMsg m ->
-      let
-        (explorer, cmd) = Explorer.update m model.explorer
-      in
-        ( { model | explorer = explorer }
-        , Cmd.map ExplorerMsg cmd
-        )
+      case m of
+        Explorer.ViewUnit uid ->
+            ( { model | menu = Menu.ViewUnit }
+            , Cmd.map (ViewUnitMsg << ViewUnit.APIMsg) (API.selectUnit uid)
+            )
+        _ ->
+          let
+            (explorer, cmd) = Explorer.update m model.explorer
+          in
+            ( { model | explorer = explorer }
+            , Cmd.map ExplorerMsg cmd
+            )
 
     StudioMsg m ->
       let
