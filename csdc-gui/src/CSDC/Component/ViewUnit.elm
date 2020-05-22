@@ -4,10 +4,12 @@ module CSDC.Component.ViewUnit exposing
   , Msg (..)
   , update
   , view
+  , ViewSelected (..)
   )
 
 import CSDC.API as API
 import CSDC.Component.Panel as Panel
+import CSDC.Component.PreviewPerson as PreviewPerson
 import CSDC.Component.PreviewUnit as PreviewUnit
 import CSDC.Input exposing (..)
 import CSDC.Notification as Notification
@@ -23,6 +25,15 @@ import Tuple exposing (pair)
 --------------------------------------------------------------------------------
 -- Model
 
+type Selected
+  = SelectedNothing
+  | SelectedPerson (Id Member)
+  | SelectedUnit (Id Subpart)
+
+type ViewSelected
+  = ViewSelectedPerson (Id Person)
+  | ViewSelectedUnit (Id Unit)
+
 type alias Model =
   { id : Maybe (Id Unit)
   , unit : Maybe Unit
@@ -33,6 +44,7 @@ type alias Model =
   , notification : Notification
   , editName : EditableMode
   , editDescription : EditableMode
+  , selected : Selected
   }
 
 initial : Model
@@ -46,6 +58,7 @@ initial =
   , notification = Notification.Empty
   , editName = EditableModeShow
   , editDescription = EditableModeShow
+  , selected = SelectedNothing
   }
 
 canEdit : Maybe UserId -> Model -> Bool
@@ -70,20 +83,40 @@ type Msg
   | MembersMsg (Panel.Msg (Id Member))
   | EditName EditableMsg
   | EditDescription EditableMsg
-  | ViewSelected (Id Unit)
+  | View ViewSelected
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     SubpartsMsg m ->
-      ( { model | panelSubparts = Panel.update m model.panelSubparts }
-      , Cmd.none
-      )
+      case m of
+        Panel.SetSelected (Just id) ->
+          ( { model
+            | panelSubparts = Panel.update m model.panelSubparts
+            , selected = SelectedUnit id
+            }
+          , Cmd.none
+          )
+
+        _ ->
+          ( { model | panelSubparts = Panel.update m model.panelSubparts }
+          , Cmd.none
+          )
 
     MembersMsg m ->
-      ( { model | panelMembers = Panel.update m model.panelMembers }
-      , Cmd.none
-      )
+      case m of
+        Panel.SetSelected (Just id) ->
+          ( { model
+            | panelMembers = Panel.update m model.panelMembers
+            , selected = SelectedPerson id
+            }
+          , Cmd.none
+          )
+
+        _ ->
+          ( { model | panelMembers = Panel.update m model.panelMembers }
+          , Cmd.none
+          )
 
     EditName m ->
       case m of
@@ -127,10 +160,17 @@ update msg model =
                 Cmd.map APIMsg <| API.updateUnit id unit
           )
 
-    ViewSelected id ->
-      ( model
-      , Cmd.map APIMsg <| API.selectUnit id
-      )
+    View selected ->
+      case selected of
+        ViewSelectedPerson id ->
+          ( model
+          , Cmd.map APIMsg <| API.selectPerson id
+          )
+
+        ViewSelectedUnit id ->
+          ( model
+          , Cmd.map APIMsg <| API.selectUnit id
+          )
 
     APIMsg apimsg ->
       case apimsg of
@@ -141,7 +181,9 @@ update msg model =
               , Cmd.none
               )
             Ok unit ->
-              ( { model | id = Just id, unit = Just unit }
+              ( { model
+                | id = Just id, unit = Just unit, selected = SelectedNothing
+                }
               , Cmd.batch
                   [ Cmd.map APIMsg <| API.getUnitMembers id
                   , Cmd.map APIMsg <| API.getUnitChildren id
@@ -241,10 +283,23 @@ view mid model =
           [ map SubpartsMsg <| Panel.view model.panelSubparts
           , map MembersMsg <| Panel.view model.panelMembers
           ]
-      , case Panel.getSelected model.panelSubparts of
-          Nothing ->
+      , case model.selected of
+          SelectedNothing ->
             row [] []
-          Just id ->
+
+          SelectedPerson id ->
+            row
+              [ height <| fillPortion 1
+              , width fill
+              ] <|
+              case idMapLookup id model.members of
+                Nothing ->
+                  [ text "Loading..." ]
+                Just person ->
+                  PreviewPerson.view person.value <|
+                  View (ViewSelectedPerson person.id)
+
+          SelectedUnit id ->
             row
               [ height <| fillPortion 1
               , width fill
@@ -253,6 +308,8 @@ view mid model =
                 Nothing ->
                   [ text "Loading..." ]
                 Just subunit ->
-                  PreviewUnit.view subunit.value (ViewSelected subunit.id)
+                  PreviewUnit.view subunit.value <|
+                  View (ViewSelectedUnit subunit.id)
+
       ] ++
       Notification.view model.notification

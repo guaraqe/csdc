@@ -5,6 +5,7 @@ import CSDC.Component.Admin as Admin
 import CSDC.Component.Explorer as Explorer
 import CSDC.Component.Menu as Menu
 import CSDC.Component.Studio as Studio
+import CSDC.Component.ViewPerson as ViewPerson
 import CSDC.Component.ViewUnit as ViewUnit
 import CSDC.Notification as Notification
 import CSDC.Notification exposing (Notification)
@@ -41,6 +42,7 @@ type alias Model =
   { id : Maybe UserId
   , menu : Menu.Model
   , admin : Admin.Model
+  , viewPerson : ViewPerson.Model
   , viewUnit : ViewUnit.Model
   , explorer : Explorer.Model
   , studio : Studio.Model
@@ -57,6 +59,7 @@ init _ =
       , explorer = explorer
       , admin = Admin.initial
       , studio = Studio.initial
+      , viewPerson = ViewPerson.initial
       , viewUnit = ViewUnit.initial
       , notification = Notification.Empty
       }
@@ -73,6 +76,7 @@ type Msg
   = AdminMsg Admin.Msg
   | MenuMsg Menu.Msg
   | ExplorerMsg Explorer.Msg
+  | ViewPersonMsg ViewPerson.Msg
   | ViewUnitMsg ViewUnit.Msg
   | StudioMsg Studio.Msg
   | APIMsg API.Msg
@@ -138,13 +142,35 @@ update msg model =
 
           _ -> (newModel, newCmd)
 
+    ViewPersonMsg m ->
+      let
+        (viewPerson, cmd) = ViewPerson.update m model.viewPerson
+      in
+        case m of
+          ViewPerson.ViewSelected id ->
+            ( { model | menu = Menu.ViewUnit }
+            , Cmd.map (ViewUnitMsg << ViewUnit.APIMsg) <|
+              API.selectUnit id
+            )
+          _ ->
+            ( { model | viewPerson = viewPerson }
+            , Cmd.map ViewPersonMsg cmd
+            )
+
     ViewUnitMsg m ->
       let
         (viewUnit, cmd) = ViewUnit.update m model.viewUnit
       in
-        ( { model | viewUnit = viewUnit }
-        , Cmd.map ViewUnitMsg cmd
-        )
+        case m of
+          ViewUnit.View (ViewUnit.ViewSelectedPerson id) ->
+            ( { model | menu = Menu.ViewPerson }
+            , Cmd.map (ViewPersonMsg << ViewPerson.APIMsg) <|
+              API.selectPerson id
+            )
+          _ ->
+            ( { model | viewUnit = viewUnit }
+            , Cmd.map ViewUnitMsg cmd
+            )
 
     APIMsg m ->
       case m of
@@ -212,6 +238,10 @@ mainPanel model =
       Menu.Explorer ->
         List.map (Element.map ExplorerMsg) <|
         Explorer.view model.explorer
+
+      Menu.ViewPerson ->
+        List.map (Element.map ViewPersonMsg) <|
+        ViewPerson.view model.viewPerson
 
       Menu.ViewUnit ->
         List.map (Element.map ViewUnitMsg) <|

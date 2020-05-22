@@ -22,7 +22,7 @@ decodeNull =
 type Msg
   = RootPerson (Response UserId)
   | UnitsPerson (Response (IdMap Member Unit))
-  | SelectPerson (Response Person)
+  | SelectPerson (Id Person) (Response Person)
   | InsertPerson (Response (Id Person))
   | UpdatePerson (Response ())
   | DeletePerson (Response ())
@@ -72,7 +72,7 @@ selectPerson : Id Person -> Cmd Msg
 selectPerson id =
   Http.get
     { url = baseUrl ++ "person/" ++ idToString id
-    , expect = Http.expectJson SelectPerson decodePerson
+    , expect = Http.expectJson (SelectPerson id) decodePerson
     }
 
 insertPerson : Person -> Cmd Msg
