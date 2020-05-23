@@ -1,8 +1,8 @@
 let
   nixpkgs-src = builtins.fetchTarball {
-    name = "nixos-19.03";
-    url = "https://github.com/nixos/nixpkgs/archive/d011e4749457af484adf2e90062c83a44ad072a4.tar.gz";
-    sha256 = "1nvhya0v98agidgxv83sb7xyb559qagx9f6iqknpxhxsv09j2qsp";
+    name = "nixos-20.03";
+    url = "https://github.com/nixos/nixpkgs/archive/6d68b920eb2df73d68a9355f9d572dbf97add5f5.tar.gz";
+    sha256 = "0j150qa5v3z9w35079z43q4s9bnrng3sq3l5l2kj8fsfkwb35syx";
   };
 
 in
