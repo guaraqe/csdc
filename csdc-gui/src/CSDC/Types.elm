@@ -70,6 +70,10 @@ idMapEmpty = IdMap (Dict.empty)
 idMapLookup : Id a -> IdMap a b -> Maybe b
 idMapLookup (Id a) (IdMap b) = Dict.get a b
 
+idMapAny : (b -> Bool) -> IdMap a b -> Bool
+idMapAny pred (IdMap b) =
+  List.any pred (Dict.values b)
+
 --------------------------------------------------------------------------------
 -- User
 

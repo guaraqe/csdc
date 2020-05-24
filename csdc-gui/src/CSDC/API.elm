@@ -43,11 +43,11 @@ type Msg
   | SelectSubpartParent (Response (IdMap Subpart Subpart))
   | InsertSubpart (Response (Id Subpart))
   | DeleteSubpart (Response ())
-  | SendMessageMember (Response ())
-  | SendReplyMember (Response ())
+  | SendMessageMember (Response (Id (Message Member)))
+  | SendReplyMember (Response (Id (Reply Member)))
   | ViewReplyMember (Response ())
-  | SendMessageSubpart (Response ())
-  | SendReplySubpart (Response ())
+  | SendMessageSubpart (Response (Id (Message Subpart)))
+  | SendReplySubpart (Response (Id (Reply Subpart)))
   | ViewReplySubpart (Response ())
   | PersonInbox (Response Inbox)
 
@@ -223,7 +223,7 @@ sendMessageMember msg =
   Http.post
     { url = baseUrl ++ "message/member/send"
     , body = Http.jsonBody <| encodeMessage encodeMember msg
-    , expect = Http.expectJson SendMessageMember decodeNull
+    , expect = Http.expectJson SendMessageMember decodeId
     }
 
 sendReplyMember : Reply Member -> Cmd Msg
@@ -231,7 +231,7 @@ sendReplyMember reply =
   Http.post
     { url = baseUrl ++ "message/member/reply"
     , body = Http.jsonBody <| encodeReply reply
-    , expect = Http.expectJson SendReplyMember decodeNull
+    , expect = Http.expectJson SendReplyMember decodeId
     }
 
 viewReplyMember : Id (Reply Member) -> Cmd Msg
@@ -239,7 +239,7 @@ viewReplyMember id =
   Http.post
     { url = baseUrl ++ "message/member/view"
     , body = Http.jsonBody <| encodeId id
-    , expect = Http.expectJson SendReplyMember decodeNull
+    , expect = Http.expectJson SendReplyMember decodeId
     }
 
 sendMessageSubpart : Message Subpart -> Cmd Msg
@@ -247,7 +247,7 @@ sendMessageSubpart msg =
   Http.post
     { url = baseUrl ++ "message/subpart/send"
     , body = Http.jsonBody <| encodeMessage encodeSubpart msg
-    , expect = Http.expectJson SendMessageSubpart decodeNull
+    , expect = Http.expectJson SendMessageSubpart decodeId
     }
 
 sendReplySubpart : Reply Subpart -> Cmd Msg
@@ -255,7 +255,7 @@ sendReplySubpart reply =
   Http.post
     { url = baseUrl ++ "message/subpart/reply"
     , body = Http.jsonBody <| encodeReply reply
-    , expect = Http.expectJson SendReplySubpart decodeNull
+    , expect = Http.expectJson SendReplySubpart decodeId
     }
 
 viewReplySubpart : Id (Reply Subpart) -> Cmd Msg
@@ -263,7 +263,7 @@ viewReplySubpart id =
   Http.post
     { url = baseUrl ++ "message/subpart/view"
     , body = Http.jsonBody <| encodeId id
-    , expect = Http.expectJson SendReplySubpart decodeNull
+    , expect = Http.expectJson SendReplySubpart decodeId
     }
 
 personInbox : Id Person -> Cmd Msg

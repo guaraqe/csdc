@@ -74,6 +74,16 @@ canEdit mid model =
             Nothing -> False
             Just member -> id == member.id
 
+isMember : Maybe UserId -> Model -> Maybe (Id Person)
+isMember mid model =
+  case mid of
+    Just (User id) ->
+      if idMapAny (\user -> user.id == id) model.members
+      then Nothing
+      else Just id
+    _ ->
+      Nothing
+
 --------------------------------------------------------------------------------
 -- Update
 
@@ -84,6 +94,7 @@ type Msg
   | EditName EditableMsg
   | EditDescription EditableMsg
   | View ViewSelected
+  | SendSubmission (Id Person)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -171,6 +182,23 @@ update msg model =
           ( model
           , Cmd.map APIMsg <| API.selectUnit id
           )
+
+    SendSubmission personId ->
+      case model.id of
+        Nothing -> (model, Cmd.none)
+        Just unitId ->
+          let
+            submission =
+              Message
+                { mtype = Submission
+                , text = "I want to be part of the unit."
+                , status = Waiting
+                , value = makeMember personId unitId
+                }
+          in
+            ( model
+            , Cmd.map APIMsg <| API.sendMessageMember submission
+            )
 
     APIMsg apimsg ->
       case apimsg of
@@ -275,6 +303,10 @@ view mid model =
                 Nothing -> "Loading..."
                 Just withid -> withid.value.name
           ]
+      , row [] <|
+          case isMember mid model of
+            Nothing -> []
+            Just id -> [ button (SendSubmission id) "Become a member" ]
       , row
           [ height <| fillPortion 1
           , width fill

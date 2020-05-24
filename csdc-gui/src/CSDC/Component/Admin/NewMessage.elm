@@ -125,6 +125,18 @@ update msg model =
               ( { initial | notification = Notification.Success }
               , Notification.reset Reset
               )
+
+        API.SendMessageMember result ->
+          case result of
+            Err err ->
+              ( { model | notification = Notification.HttpError err }
+              , Cmd.none
+              )
+            Ok _ ->
+              ( { initial | notification = Notification.Success }
+              , Notification.reset Reset
+              )
+
         _ ->
           (model, Cmd.none)
 
