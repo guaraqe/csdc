@@ -7,7 +7,9 @@ module CSDC.Component.Admin exposing
   )
 
 import CSDC.Component.Admin.NewMember as NewMember
+import CSDC.Component.Admin.NewMessage as NewMessage
 import CSDC.Component.Admin.NewPerson as NewPerson
+import CSDC.Component.Admin.NewReply as NewReply
 import CSDC.Component.Admin.NewUnit as NewUnit
 import CSDC.Component.Admin.NewSubpart as NewSubpart
 
@@ -28,7 +30,9 @@ import String
 
 type alias Model =
   { newMember : NewMember.Model
+  , newMessage : NewMessage.Model
   , newPerson : NewPerson.Model
+  , newReply : NewReply.Model
   , newSubpart : NewSubpart.Model
   , newUnit : NewUnit.Model
   }
@@ -36,7 +40,9 @@ type alias Model =
 initial : Model
 initial =
   { newMember = NewMember.initial
+  , newMessage = NewMessage.initial
   , newPerson = NewPerson.initial
+  , newReply = NewReply.initial
   , newSubpart = NewSubpart.initial
   , newUnit = NewUnit.initial
   }
@@ -46,7 +52,9 @@ initial =
 
 type Msg
   = NewMemberMsg NewMember.Msg
+  | NewMessageMsg NewMessage.Msg
   | NewPersonMsg NewPerson.Msg
+  | NewReplyMsg NewReply.Msg
   | NewSubpartMsg NewSubpart.Msg
   | NewUnitMsg NewUnit.Msg
 
@@ -77,6 +85,22 @@ update msg model =
         , Cmd.map NewMemberMsg cmd
         )
 
+    NewMessageMsg m ->
+      let
+        (newMessage, cmd) = NewMessage.update m model.newMessage
+      in
+        ( { model | newMessage = newMessage }
+        , Cmd.map NewMessageMsg cmd
+        )
+
+    NewReplyMsg m ->
+      let
+        (newReply, cmd) = NewReply.update m model.newReply
+      in
+        ( { model | newReply = newReply }
+        , Cmd.map NewReplyMsg cmd
+        )
+
     NewSubpartMsg m ->
       let
         (newSubpart, cmd) = NewSubpart.update m model.newSubpart
@@ -94,4 +118,6 @@ view model =
   , Element.map NewUnitMsg <| NewUnit.view model.newUnit
   , Element.map NewMemberMsg <| NewMember.view model.newMember
   , Element.map NewSubpartMsg <| NewSubpart.view model.newSubpart
+  , Element.map NewMessageMsg <| NewMessage.view model.newMessage
+  , Element.map NewReplyMsg <| NewReply.view model.newReply
   ]
