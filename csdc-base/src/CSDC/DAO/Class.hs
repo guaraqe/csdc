@@ -76,8 +76,8 @@ class (IsRelation r, Monad m) => HasRelation r m where
 -- Message
 
 class HasRelation r m => HasMessage r m where
-  sendMessage :: Message r -> m ()
-  sendReply :: Reply r -> m ()
+  sendMessage :: Message r -> m (Id (Message r))
+  sendReply :: Reply r -> m (Id (Reply r))
   viewReply :: Id (Reply r) -> m ()
 
 --------------------------------------------------------------------------------

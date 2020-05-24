@@ -17,7 +17,7 @@ type DeleteJSON a = Delete '[JSON] a
 type CaptureId a = Capture "id" (Id a)
 
 --------------------------------------------------------------------------------
--- CRUD and REL API
+-- CRUD, REL and MSG API
 
 type CRUD a =
        CaptureId a :> GetJSON (Maybe a)
@@ -47,11 +47,11 @@ serveREL =
   :<|> deleteRelation
 
 type MSG r =
-       "send" :> PostJSON (Message r) ()
-  :<|> "reply" :> PostJSON (Reply r) ()
+       "send" :> PostJSON (Message r) (Id (Message r))
+  :<|> "reply" :> PostJSON (Reply r) (Id (Reply r))
   :<|> "view" :> PostJSON (Id (Reply r)) ()
 
-serveMSG :: HasMessage r m => ServerT (MSG r) m
+serveMSG :: (Show r, HasMessage r m) => ServerT (MSG r) m
 serveMSG =
        sendMessage
   :<|> sendReply

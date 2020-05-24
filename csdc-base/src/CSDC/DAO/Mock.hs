@@ -1,5 +1,7 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -35,10 +37,10 @@ import CSDC.DAO.Class
 import qualified CSDC.Auth.ORCID as ORCID
 import qualified CSDC.Data.IdMap as IdMap
 
-import Control.Concurrent.MVar (MVar, newMVar)
-import Control.Monad.State.Strict (MonadState (..))
+import Control.Monad.State.Strict (MonadState (..), modify')
 import Control.Monad.IO.Class (MonadIO (..))
-import Control.Lens (Lens', makeLenses, view, set, use, modifying)
+import Control.Lens (Lens', makeLenses, view, set, use, over)
+import Data.IORef (IORef, newIORef)
 
 --------------------------------------------------------------------------------
 -- In-memory store
@@ -57,8 +59,8 @@ data Store = Store
 
 makeLenses ''Store
 
-makeEmptyStore :: MonadIO m => m (MVar Store)
-makeEmptyStore = liftIO $ newMVar
+makeEmptyStore :: MonadIO m => m (IORef Store)
+makeEmptyStore = liftIO $ newIORef
   Store
     { _store_person = singleton personId person
     , _store_unit = singleton unitId unit
@@ -94,9 +96,9 @@ makeEmptyStore = liftIO $ newMVar
 -- Mock implementation
 
 newtype Mock m a = Mock (RIO Store m a)
-  deriving newtype (Functor, Applicative, Monad, MonadState Store)
+  deriving newtype (Functor, Applicative, Monad, MonadState Store, MonadIO)
 
-runMock :: MonadIO m => MVar Store -> Mock m a -> m a
+runMock :: MonadIO m => IORef Store -> Mock m a -> m a
 runMock var (Mock m) = runRIO var m
 
 instance MonadIO m => HasDAO (Mock m) where
@@ -201,37 +203,35 @@ instance MonadIO m => HasRelation Subpart (Mock m) where
     modifying store_subpart (IdMap.delete uid)
 
 instance MonadIO m => HasMessage Member (Mock m ) where
-  sendMessage m = do
-    _ <- stating store_messageMember (IdMap.insertNew m)
-    pure ()
+  sendMessage m =
+    stating store_messageMember (IdMap.insertNew m)
 
   sendReply r = do
-    _ <- stating store_replyMember (IdMap.insertNew r)
+    rid <- stating store_replyMember (IdMap.insertNew r)
     let
       status = case reply_type r of
         Accept -> Accepted
         Reject -> Rejected
       uid = reply_id r
     modifying store_messageMember $ IdMap.update uid (markMessage status)
-    pure ()
+    pure rid
 
   viewReply uid =
     modifying store_replyMember $ IdMap.update uid (markReply Seen)
 
 instance MonadIO m => HasMessage Subpart (Mock m ) where
   sendMessage m = do
-    _ <- stating store_messageSubpart (IdMap.insertNew m)
-    pure ()
+    stating store_messageSubpart (IdMap.insertNew m)
 
   sendReply r = do
-    _ <- stating store_replySubpart (IdMap.insertNew r)
+    rid <- stating store_replySubpart (IdMap.insertNew r)
     let
       status = case reply_type r of
         Accept -> Accepted
         Reject -> Rejected
       uid = reply_id r
     modifying store_messageSubpart $ IdMap.update uid (markMessage status)
-    pure ()
+    pure rid
 
   viewReply uid =
     modifying store_replySubpart $ IdMap.update uid (markReply Seen)
@@ -241,11 +241,15 @@ instance MonadIO m => HasMessage Subpart (Mock m ) where
 
 stating :: MonadState s m => Lens' s a -> (a -> (x,a)) -> m x
 stating l f = do
-  let f' s =
-        let (x, a) = f (view l s)
+  let f' !s =
+        let !(!x, !a) = f (view l s)
         in (x, set l a s)
   state f'
 {-# INLINE stating #-}
+
+modifying :: MonadState s m => Lens' s a -> (a -> a) -> m ()
+modifying l f = modify' (over l f)
+{-# INLINE modifying #-}
 
 markMessage :: MessageStatus -> Message a -> Message a
 markMessage s m = m { message_status = s }

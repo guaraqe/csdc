@@ -1,27 +1,31 @@
+{-# LANGUAGE BangPatterns #-}
+
 module CSDC.Data.RIO
   ( RIO
   , runRIO
   ) where
 
-import Control.Concurrent.MVar (MVar, readMVar, modifyMVar)
 import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Reader (ReaderT, runReaderT, ask)
 import Control.Monad.State (MonadState (..))
+import Data.IORef (IORef, readIORef, atomicModifyIORef', atomicWriteIORef)
 
-newtype RIO s m a = RIO (ReaderT (MVar s) m a)
-  deriving newtype (Functor, Applicative, Monad)
+newtype RIO s m a = RIO (ReaderT (IORef s) m a)
+  deriving newtype (Functor, Applicative, Monad, MonadIO)
 
-runRIO :: MonadIO m => MVar s -> RIO s m a -> m a
+runRIO :: MonadIO m => IORef s -> RIO s m a -> m a
 runRIO var (RIO m) = runReaderT m var
 
 instance MonadIO m => MonadState s (RIO s m) where
   get = RIO $ do
     var <- ask
-    liftIO $ readMVar var
+    liftIO $ readIORef var
+
+  put !x = RIO $ do
+    var <- ask
+    liftIO $ atomicWriteIORef var x
 
   state f = RIO $ do
     var <- ask
-    let f' s = do
-          let (s',a) = f s
-          pure (a,s')
-    liftIO $ modifyMVar var f'
+    let f' !x = let !(!a,!b) = f x in (b,a)
+    liftIO $ atomicModifyIORef' var f'

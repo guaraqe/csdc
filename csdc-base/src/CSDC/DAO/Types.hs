@@ -1,3 +1,5 @@
+{-# LANGUAGE StrictData #-}
+
 module CSDC.DAO.Types
   ( -- Entities
     Person (..)
@@ -62,7 +64,7 @@ data Subpart = Subpart
 
 data MessageStatus = Waiting | Accepted | Rejected
   deriving (Show, Eq, Ord, Generic)
-  deriving (FromJSON, ToJSON) via MessageStatus
+  deriving (FromJSON, ToJSON) via JSON MessageStatus
 
 data MessageType = Invitation | Submission
   deriving (Show, Eq, Ord, Generic)
