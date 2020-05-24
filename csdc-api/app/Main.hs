@@ -8,7 +8,7 @@ import CSDC.DAO.Mock (Store, makeEmptyStore, runMock)
 
 import qualified CSDC.Auth as Auth
 
-import Control.Concurrent.MVar (MVar)
+import Data.IORef (IORef)
 import Network.Wai (Middleware)
 import Network.Wai.Handler.Warp (runSettings, setPort, setLogger, defaultSettings)
 import Network.Wai.Logger (withStdoutLogger)
@@ -50,7 +50,7 @@ makeMiddleware config = do
       cors = Cors.cors (\_ -> Just corsOptions)
   pure $ authentication . cors
 
-application :: FilePath -> MVar Store -> Application
+application :: FilePath -> IORef Store -> Application
 application path store = \request response ->
   let
     proxy = Proxy @API
