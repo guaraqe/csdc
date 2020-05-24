@@ -30,6 +30,7 @@ type Model
   | ViewPerson
   | ViewUnit
   | Admin
+  | ViewUnitAdmin
 
 initial : Model
 initial = Studio

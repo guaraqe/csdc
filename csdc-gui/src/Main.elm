@@ -7,6 +7,7 @@ import CSDC.Component.Menu as Menu
 import CSDC.Component.Studio as Studio
 import CSDC.Component.ViewPerson as ViewPerson
 import CSDC.Component.ViewUnit as ViewUnit
+import CSDC.Component.ViewUnitAdmin as ViewUnitAdmin
 import CSDC.Notification as Notification
 import CSDC.Notification exposing (Notification)
 import CSDC.Types exposing (..)
@@ -44,6 +45,7 @@ type alias Model =
   , admin : Admin.Model
   , viewPerson : ViewPerson.Model
   , viewUnit : ViewUnit.Model
+  , viewUnitAdmin : ViewUnitAdmin.Model
   , explorer : Explorer.Model
   , studio : Studio.Model
   , notification : Notification
@@ -61,6 +63,7 @@ init _ =
       , studio = Studio.initial
       , viewPerson = ViewPerson.initial
       , viewUnit = ViewUnit.initial
+      , viewUnitAdmin = ViewUnitAdmin.initial
       , notification = Notification.Empty
       }
     , Cmd.batch
@@ -78,6 +81,7 @@ type Msg
   | ExplorerMsg Explorer.Msg
   | ViewPersonMsg ViewPerson.Msg
   | ViewUnitMsg ViewUnit.Msg
+  | ViewUnitAdminMsg ViewUnitAdmin.Msg
   | StudioMsg Studio.Msg
   | APIMsg API.Msg
 
@@ -167,10 +171,23 @@ update msg model =
             , Cmd.map (ViewPersonMsg << ViewPerson.APIMsg) <|
               API.selectPerson id
             )
+          ViewUnit.ViewAdmin id ->
+            ( { model | menu = Menu.ViewUnitAdmin }
+            , Cmd.map (ViewUnitAdminMsg << ViewUnitAdmin.APIMsg) <|
+              API.unitInbox id
+            )
           _ ->
             ( { model | viewUnit = viewUnit }
             , Cmd.map ViewUnitMsg cmd
             )
+
+    ViewUnitAdminMsg m ->
+      let
+        (viewUnitAdmin, cmd) = ViewUnitAdmin.update m model.viewUnitAdmin
+      in
+        ( { model | viewUnitAdmin = viewUnitAdmin }
+        , Cmd.map ViewUnitAdminMsg cmd
+        )
 
     APIMsg m ->
       case m of
@@ -246,6 +263,10 @@ mainPanel model =
       Menu.ViewUnit ->
         List.map (Element.map ViewUnitMsg) <|
         ViewUnit.view model.id model.viewUnit
+
+      Menu.ViewUnitAdmin ->
+        List.map (Element.map ViewUnitAdminMsg) <|
+        ViewUnitAdmin.view model.id model.viewUnitAdmin
 
       Menu.Admin ->
         List.map (Element.map AdminMsg) <|

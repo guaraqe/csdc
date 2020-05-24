@@ -108,6 +108,7 @@ type Msg
   | EditDescription EditableMsg
   | View ViewSelected
   | SendSubmission (Id Person)
+  | ViewAdmin (Id Unit)
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -213,6 +214,11 @@ update msg model =
             , Cmd.map APIMsg <| API.sendMessageMember submission
             )
 
+    ViewAdmin _ ->
+      ( model
+      , Cmd.none
+      )
+
     APIMsg apimsg ->
       case apimsg of
         API.SelectUnit id result ->
@@ -243,7 +249,7 @@ update msg model =
               , Cmd.none
               )
 
-        API.UnitInbox result ->
+        API.UnitInbox _ result ->
           case result of
             Err err ->
               ( { model | notification = Notification.HttpError err }
@@ -341,6 +347,13 @@ view mid model =
                 Nothing -> "Loading..."
                 Just withid -> withid.value.name
           ]
+      , row [] <|
+          if canEdit mid model
+          then
+            case model.id of
+              Nothing -> []
+              Just id -> [ button (ViewAdmin id) "Admin" ]
+          else []
       , row [] <|
           case isMember mid model of
             Nothing -> []
