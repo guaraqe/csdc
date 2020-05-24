@@ -240,6 +240,16 @@ instance MonadIO m => HasMessage Member (Mock m ) where
         Reject -> Rejected
       uid = reply_id r
     modifying store_messageMember $ IdMap.update uid (markMessage status)
+    case reply_type r of
+      Accept ->
+        fmap (IdMap.lookup uid) (use store_messageMember) >>= \case
+          Nothing ->
+            pure ()
+          Just msg -> do
+            _ <- insertRelation $ message_value msg
+            pure ()
+      _ ->
+        pure ()
     pure rid
 
   viewReply uid =
