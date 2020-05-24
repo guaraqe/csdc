@@ -45,6 +45,7 @@ type alias Model =
   , editName : EditableMode
   , editDescription : EditableMode
   , selected : Selected
+  , inbox : Inbox
   }
 
 initial : Model
@@ -59,6 +60,7 @@ initial =
   , editName = EditableModeShow
   , editDescription = EditableModeShow
   , selected = SelectedNothing
+  , inbox = emptyInbox
   }
 
 canEdit : Maybe UserId -> Model -> Bool
@@ -83,6 +85,17 @@ isMember mid model =
       else Just id
     _ ->
       Nothing
+
+isPending : Maybe UserId -> Model -> Bool
+isPending mid model =
+  let
+    getMessagePerson (Message m) = getMemberPerson m.value
+  in
+  case mid of
+    Just (User id) ->
+      idMapAny (\m -> getMessagePerson m == id) model.inbox.messageMember
+    _ ->
+      False
 
 --------------------------------------------------------------------------------
 -- Update
@@ -215,6 +228,7 @@ update msg model =
               , Cmd.batch
                   [ Cmd.map APIMsg <| API.getUnitMembers id
                   , Cmd.map APIMsg <| API.getUnitChildren id
+                  , Cmd.map APIMsg <| API.unitInbox id
                   ]
               )
 
@@ -226,6 +240,17 @@ update msg model =
               )
             Ok unit ->
               ( { model | notification = Notification.Success }
+              , Cmd.none
+              )
+
+        API.UnitInbox result ->
+          case result of
+            Err err ->
+              ( { model | notification = Notification.HttpError err }
+              , Cmd.none
+              )
+            Ok inbox ->
+              ( { model | inbox = inbox }
               , Cmd.none
               )
 
@@ -264,6 +289,19 @@ update msg model =
                 ( { model | subparts = subparts, panelSubparts = panelSubparts }
                 , Cmd.none
                 )
+
+        API.SendMessageMember result ->
+          case result of
+            Err err ->
+              ( { model | notification = Notification.HttpError err }
+              , Cmd.none
+              )
+            Ok _ ->
+              ( model
+              , case model.id of
+                  Nothing -> Cmd.none
+                  Just id -> Cmd.map APIMsg <| API.unitInbox id
+              )
 
         _ ->
           (model, Cmd.none)
@@ -306,7 +344,10 @@ view mid model =
       , row [] <|
           case isMember mid model of
             Nothing -> []
-            Just id -> [ button (SendSubmission id) "Become a member" ]
+            Just id ->
+              if isPending mid model
+              then [ text "Your submission was sent." ]
+              else [ button (SendSubmission id) "Become a member" ]
       , row
           [ height <| fillPortion 1
           , width fill

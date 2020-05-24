@@ -50,6 +50,7 @@ type Msg
   | SendReplySubpart (Response (Id (Reply Subpart)))
   | ViewReplySubpart (Response ())
   | PersonInbox (Response Inbox)
+  | UnitInbox (Response Inbox)
 
 --------------------------------------------------------------------------------
 -- Person
@@ -269,8 +270,15 @@ viewReplySubpart id =
 personInbox : Id Person -> Cmd Msg
 personInbox id =
   Http.get
-    { url = baseUrl ++ "message/inbox/" ++ idToString id
+    { url = baseUrl ++ "message/inbox/person/" ++ idToString id
     , expect = Http.expectJson PersonInbox decodeInbox
+    }
+
+unitInbox : Id Unit -> Cmd Msg
+unitInbox id =
+  Http.get
+    { url = baseUrl ++ "message/inbox/unit/" ++ idToString id
+    , expect = Http.expectJson UnitInbox decodeInbox
     }
 
 --------------------------------------------------------------------------------

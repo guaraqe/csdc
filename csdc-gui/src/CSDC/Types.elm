@@ -158,6 +158,9 @@ makeMember person unit = Member
   , unit = unit
   }
 
+getMemberPerson : Member -> Id Person
+getMemberPerson (Member m) = m.person
+
 getMemberUnit : Member -> Id Unit
 getMemberUnit (Member m) = m.unit
 

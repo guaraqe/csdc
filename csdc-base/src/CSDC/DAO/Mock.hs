@@ -145,6 +145,32 @@ instance MonadIO m => HasDAO (Mock m) where
       , inbox_replySubpart = IdMap.empty
       }
 
+  inboxUnit unitId = do
+    let
+      predMessageId m =
+        member_unit (message_value m) == unitId
+
+      predMessageWaiting m =
+        message_status m == Waiting
+
+    messageMemberAll <- IdMap.filter predMessageId <$> use store_messageMember
+
+    let
+      predReply r =
+        reply_id r `elem` IdMap.keys messageMemberAll &&
+        reply_status r == NotSeen
+
+      messageMember = IdMap.filter predMessageWaiting messageMemberAll
+
+    replyMember <- IdMap.filter predReply <$> use store_replyMember
+
+    pure Inbox
+      { inbox_messageMember = messageMember
+      , inbox_replyMember = replyMember
+      , inbox_messageSubpart = IdMap.empty
+      , inbox_replySubpart = IdMap.empty
+      }
+
 instance MonadIO m => HasCRUD Person (Mock m) where
   select uid =
     IdMap.lookup uid <$> use store_person

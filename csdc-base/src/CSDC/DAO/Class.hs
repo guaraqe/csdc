@@ -100,6 +100,8 @@ class
 
   inboxPerson :: Id Person -> m Inbox
 
+  inboxUnit :: Id Unit -> m Inbox
+
 getUserUnits :: HasDAO m => Id Person -> m (IdMap Member Unit)
 getUserUnits uid = do
   members <- selectRelationL @Member uid
@@ -163,6 +165,7 @@ instance HasDAO m => HasDAO (ReaderT r m) where
   rootUnit = lift rootUnit
   createUnit = lift1 createUnit
   inboxPerson = lift1 inboxPerson
+  inboxUnit = lift1 inboxUnit
 
 lift1 :: (MonadTrans t, Monad m) => (a -> m b) -> a -> t m b
 lift1 f a = lift (f a)
