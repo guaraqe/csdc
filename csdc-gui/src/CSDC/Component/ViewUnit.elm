@@ -189,7 +189,7 @@ update msg model =
       case selected of
         ViewSelectedPerson id ->
           ( model
-          , Cmd.map APIMsg <| API.selectPerson id
+          , Cmd.none
           )
 
         ViewSelectedUnit id ->
