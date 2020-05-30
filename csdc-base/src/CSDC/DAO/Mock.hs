@@ -22,6 +22,7 @@ import CSDC.DAO.Types
   , Subpart (..)
   , Message (..)
   , MessageStatus (..)
+  , MessageType (..)
   , Reply (..)
   , ReplyStatus (..)
   , ReplyType (..)
@@ -132,7 +133,8 @@ instance MonadIO m => HasDAO (Mock m) where
     let
       predReply r =
         reply_id r `elem` IdMap.keys messageMemberAll &&
-        reply_status r == NotSeen
+        reply_status r == NotSeen &&
+        reply_mtype r == Submission
 
       messageMember = IdMap.filter predMessageWaiting messageMemberAll
 

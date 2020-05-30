@@ -318,15 +318,17 @@ encodeReplyType s =
 
 type Reply a = Reply
   { rtype : ReplyType
+  , mtype : MessageType
   , text : String
   , status : ReplyStatus
   , id : Id (Message a)
   }
 
-makeReply : ReplyType -> String -> ReplyStatus -> Id (Message a) -> Reply a
-makeReply rtype text status id =
+makeReply : ReplyType -> MessageType -> String -> ReplyStatus -> Id (Message a) -> Reply a
+makeReply rtype mtype text status id =
   Reply
     { rtype = rtype
+    , mtype = mtype
     , text = text
     , status = status
     , id = id
@@ -336,6 +338,7 @@ encodeReply : Reply a -> Value
 encodeReply (Reply m) =
   Encoder.object
     [ ("type", encodeReplyType m.rtype)
+    , ("mtype", encodeMessageType m.mtype)
     , ("text", Encoder.string m.text)
     , ("status", encodeReplyStatus m.status)
     , ("id", encodeId m.id)
@@ -343,8 +346,9 @@ encodeReply (Reply m) =
 
 decodeReply : Decoder (Reply a)
 decodeReply =
-  Decoder.map4 makeReply
+  Decoder.map5 makeReply
     (Decoder.field "type" decodeReplyType)
+    (Decoder.field "mtype" decodeMessageType)
     (Decoder.field "text" Decoder.string)
     (Decoder.field "status" decodeReplyStatus)
     (Decoder.field "id" decodeId)

@@ -127,7 +127,7 @@ update msg model =
           )
       in
         case m of
-          Studio.ViewSelected uid ->
+          Studio.View (Studio.ViewSelectedUnit uid) ->
             ( { newModel | menu = Menu.ViewUnit }
             , Cmd.map (ViewUnitMsg << ViewUnit.APIMsg) (API.selectUnit uid)
             )

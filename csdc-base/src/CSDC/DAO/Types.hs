@@ -88,6 +88,7 @@ data ReplyType = Accept | Reject
 
 data Reply a = Reply
   { reply_type :: ReplyType
+  , reply_mtype :: MessageType
   , reply_text :: Text
   , reply_status :: ReplyStatus
   , reply_id :: Id (Message a)

@@ -23,6 +23,7 @@ import String
 type alias Model =
   { message : Maybe (Id (Message Member))
   , replyType : Maybe ReplyType
+  , messageType : Maybe MessageType
   , replyStatus : Maybe ReplyStatus
   , notification : Notification
   }
@@ -31,6 +32,7 @@ initial : Model
 initial =
   { message = Nothing
   , replyType = Nothing
+  , messageType = Nothing
   , replyStatus = Nothing
   , notification = Notification.Empty
   }
@@ -41,12 +43,15 @@ validate model =
     (\message ->
       model.replyType |> Maybe.andThen
         (\replyType ->
-          model.replyStatus |> Maybe.andThen
-            (\replyStatus ->
-              Just <|
-              makeReply replyType "Reply" replyStatus message
-            )
-        )
+         model.messageType |> Maybe.andThen
+           (\messageType ->
+             model.replyStatus |> Maybe.andThen
+               (\replyStatus ->
+                 Just <|
+                 makeReply replyType messageType "Reply" replyStatus message
+               )
+           )
+       )
     )
 
 --------------------------------------------------------------------------------
@@ -55,6 +60,7 @@ validate model =
 type Msg
   = InputMessage String
   | APIMsg API.Msg
+  | InputMessageType MessageType
   | InputReplyType ReplyType
   | InputReplyStatus ReplyStatus
   | Submit
@@ -92,6 +98,11 @@ update msg model =
 
     InputReplyType replyType ->
       ( { model | replyType = Just replyType }
+      , Cmd.none
+      )
+
+    InputMessageType messageType ->
+      ( { model | messageType = Just messageType }
       , Cmd.none
       )
 
@@ -160,6 +171,21 @@ selectReplyType model =
     , options =
         [ Input.option Accept (text "Accept")
         , Input.option Reject (text "Reject")
+        ]
+    }
+
+selectMessageType : Model -> Element Msg
+selectMessageType model =
+  Input.radioRow
+    [ padding 10
+    , spacing 20
+    ]
+    { onChange = InputMessageType
+    , selected = model.messageType
+    , label = Input.labelAbove [] (text "Message Type")
+    , options =
+        [ Input.option Invitation (text "Invitation")
+        , Input.option Submission (text "Submission")
         ]
     }
 
