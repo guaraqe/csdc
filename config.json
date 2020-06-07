@@ -1,11 +1,4 @@
 { "port": 8080
 , "path": "www"
-, "auth":
-    { "admin": "SUPER_SECRET_TOKEN"
-    , "orcid":
-        { "id": "APP-KAP5N5HLA7C18478"
-        , "secret": "91c72aef-4754-4011-98f7-88ea4845d663"
-        , "endpoint": "production"
-        }
-    }
+, "orcidEndpoint": "production"
 }

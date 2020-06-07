@@ -4,7 +4,7 @@
 # Server
 
 serve: ## Launch the server.
-	cabal v2-run -- csdc-server config.json
+	cabal v2-run -- csdc-server config.json secret.json
 
 .PHONY: serve
 

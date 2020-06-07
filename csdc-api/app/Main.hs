@@ -3,7 +3,7 @@
 module Main where
 
 import CSDC.API (API, serveAPI)
-import CSDC.Config (Config (..), readConfig, showConfig)
+import CSDC.Config (Context (..), readConfig, readSecret, showConfig, activate)
 import CSDC.DAO.Mock (Store, makeEmptyStore, runMock)
 
 import qualified CSDC.Auth as Auth
@@ -20,31 +20,36 @@ import qualified Network.Wai.Middleware.Cors as Cors
 main :: IO ()
 main =
   getArgs >>= \case
-    [] ->
-      error "First argument must be the configuration file path."
-    path:_ ->
-      readConfig path >>= \case
+    configPath:secretPath:[] ->
+      readConfig configPath >>= \case
         Nothing ->
           error "Could not parse the configuration file."
-        Just config -> do
-          putStrLn "Running the server with the following configuration:\n"
-          showConfig config
-          putStrLn ""
-          mainWith config
+        Just config ->
+          readSecret secretPath >>= \case
+            Nothing ->
+              error "Could not parse the secrets file."
+            Just secret -> do
+              putStrLn "Running the server with the following configuration:\n"
+              showConfig config
+              putStrLn ""
+              context <- activate config secret
+              mainWith context
+    _ ->
+      error "Usage: csdc-server CONFIG_PATH SECRET_PATH"
 
-mainWith :: Config -> IO ()
-mainWith config = do
+mainWith :: Context -> IO ()
+mainWith context = do
   store <- makeEmptyStore
-  middleware <- makeMiddleware config
+  middleware <- makeMiddleware context
   withStdoutLogger $ \logger -> do
-    let port = config_port config
-        path = config_path config
+    let port = context_port context
+        path = context_path context
         settings = setPort port $ setLogger logger defaultSettings
     runSettings settings $ middleware $ application path store
 
-makeMiddleware :: Config -> IO Middleware
-makeMiddleware config = do
-  authentication <- Auth.middleware (config_auth config)
+makeMiddleware :: Context -> IO Middleware
+makeMiddleware context = do
+  authentication <- Auth.middleware (context_auth context)
   let corsOptions = Cors.simpleCorsResourcePolicy
        { Cors.corsRequestHeaders = Cors.simpleHeaders }
       cors = Cors.cors (\_ -> Just corsOptions)
