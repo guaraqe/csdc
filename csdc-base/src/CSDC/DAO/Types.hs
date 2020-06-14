@@ -14,12 +14,15 @@ module CSDC.DAO.Types
   , Reply (..)
   , ReplyStatus (..)
   , ReplyType (..)
+    -- GUI Types
+  , PersonInfo (..)
+  , UnitInfo (..)
   , Inbox (..)
   ) where
 
 import CSDC.Aeson (JSON (..))
-import CSDC.Data.Id (Id)
-import CSDC.Data.IdMap (IdMap')
+import CSDC.Data.Id (Id, WithId)
+import CSDC.Data.IdMap (IdMap, IdMap')
 
 import qualified CSDC.Auth.ORCID as ORCID
 
@@ -94,6 +97,25 @@ data Reply a = Reply
   , reply_id :: Id (Message a)
   } deriving (Show, Eq, Generic)
     deriving (FromJSON, ToJSON) via JSON (Reply a)
+
+--------------------------------------------------------------------------------
+-- GUI Types
+
+data PersonInfo = PersonInfo
+  { personInfo_id :: Id Person
+  , personInfo_person :: Person
+  , personInfo_members :: IdMap Member (WithId Unit)
+  } deriving (Show, Eq, Generic)
+    deriving (FromJSON, ToJSON) via JSON PersonInfo
+
+data UnitInfo = UnitInfo
+  { unitInfo_id :: Id Unit
+  , unitInfo_unit :: Unit
+  , unitInfo_members :: IdMap Member (WithId Person)
+  , unitInfo_children :: IdMap Subpart (WithId Unit)
+  , unitInfo_parents :: IdMap Subpart (WithId Unit)
+  } deriving (Show, Eq, Generic)
+    deriving (FromJSON, ToJSON) via JSON UnitInfo
 
 data Inbox = Inbox
   { inbox_messageMember :: IdMap' (Message Member)

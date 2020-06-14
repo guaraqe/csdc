@@ -21,12 +21,14 @@ decodeNull =
 
 type Msg
   = RootPerson (Response UserId)
+  | GetPersonInfo (Response PersonInfo)
   | UnitsPerson (Response (IdMap Member Unit))
   | SelectPerson (Id Person) (Response Person)
   | InsertPerson (Response (Id Person))
   | UpdatePerson (Response ())
   | DeletePerson (Response ())
   | RootUnit (Response (Id Unit))
+  | GetUnitInfo (Response UnitInfo)
   | GetUnitMembers (Response (IdMap Member (WithId Person)))
   | GetUnitChildren (Response (IdMap Subpart (WithId Unit)))
   | GetUnitParents (Response (IdMap Subpart (WithId Unit)))
@@ -60,6 +62,13 @@ rootPerson =
   Http.get
     { url = baseUrl ++ "person/root"
     , expect = Http.expectJson RootPerson (decodeUser decodeId)
+    }
+
+getPersonInfo : Cmd Msg
+getPersonInfo =
+  Http.get
+    { url = baseUrl ++ "person/info"
+    , expect = Http.expectJson GetPersonInfo decodePersonInfo
     }
 
 unitsPerson : Id Person -> Cmd Msg
@@ -103,6 +112,13 @@ rootUnit =
   Http.get
     { url = baseUrl ++ "unit/root"
     , expect = Http.expectJson RootUnit decodeId
+    }
+
+getUnitInfo : Cmd Msg
+getUnitInfo =
+  Http.get
+    { url = baseUrl ++ "unit/info"
+    , expect = Http.expectJson GetUnitInfo decodeUnitInfo
     }
 
 getUnitMembers : Id Unit -> Cmd Msg

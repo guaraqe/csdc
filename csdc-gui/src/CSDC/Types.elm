@@ -119,6 +119,19 @@ decodePerson =
     (Decoder.field "orcid" Decoder.string)
     (Decoder.field "description" Decoder.string)
 
+type alias PersonInfo =
+  { id : Id Person
+  , person : Person
+  , members : IdMap Member (WithId Unit)
+  }
+
+decodePersonInfo : Decoder PersonInfo
+decodePersonInfo =
+  Decoder.map3 PersonInfo
+    (Decoder.field "id" decodeId)
+    (Decoder.field "person" decodePerson)
+    (Decoder.field "members" (decodeIdMap (decodeWithId decodeUnit)))
+
 --------------------------------------------------------------------------------
 -- Unit
 
@@ -136,13 +149,29 @@ encodeUnit unit =
     , ("chair", encodeId unit.chair)
     ]
 
-
 decodeUnit : Decoder Unit
 decodeUnit =
   Decoder.map3 Unit
     (Decoder.field "name" Decoder.string)
     (Decoder.field "description" Decoder.string)
     (Decoder.field "chair" decodeId)
+
+type alias UnitInfo =
+  { id : Id Unit
+  , unit : Unit
+  , members : IdMap Member (WithId Person)
+  , children : IdMap Subpart (WithId Unit)
+  , parents : IdMap Subpart (WithId Unit)
+  }
+
+decodeUnitInfo : Decoder UnitInfo
+decodeUnitInfo =
+  Decoder.map5 UnitInfo
+    (Decoder.field "id" decodeId)
+    (Decoder.field "unit" decodeUnit)
+    (Decoder.field "members" (decodeIdMap (decodeWithId decodePerson)))
+    (Decoder.field "children" (decodeIdMap (decodeWithId decodeUnit)))
+    (Decoder.field "parents" (decodeIdMap (decodeWithId decodeUnit)))
 
 --------------------------------------------------------------------------------
 -- Member

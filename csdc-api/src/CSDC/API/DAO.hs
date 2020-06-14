@@ -62,12 +62,14 @@ serveMSG =
 
 type PersonAPI =
        "root" :> GetJSON UserId
+  :<|> CaptureId Person :> "info" :> GetJSON (Maybe PersonInfo)
   :<|> CaptureId Person :> "units" :> GetJSON (IdMap Member Unit)
   :<|> CRUD Person
 
 servePersonAPI :: (HasUser m, HasDAO m) => ServerT PersonAPI m
 servePersonAPI =
        getUser
+  :<|> getPersonInfo
   :<|> getUserUnits
   :<|> serveCRUD
 
@@ -76,6 +78,7 @@ servePersonAPI =
 
 type UnitAPI =
        "root" :> Get '[JSON] (Id Unit)
+  :<|> CaptureId Unit :> "info" :> GetJSON (Maybe UnitInfo)
   :<|> CaptureId Unit :> "members" :> GetJSON (IdMap Member (WithId Person))
   :<|> CaptureId Unit :> "children" :> GetJSON (IdMap Subpart (WithId Unit))
   :<|> CaptureId Unit :> "parents" :> GetJSON (IdMap Subpart (WithId Unit))
@@ -85,6 +88,7 @@ type UnitAPI =
 serveUnitAPI :: HasDAO m => ServerT UnitAPI m
 serveUnitAPI =
        rootUnit
+  :<|> getUnitInfo
   :<|> getUnitMembers
   :<|> getUnitChildren
   :<|> getUnitParents

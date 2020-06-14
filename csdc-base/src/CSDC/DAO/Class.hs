@@ -8,6 +8,8 @@ module CSDC.DAO.Class
   , HasRelation (..)
   , IsRelation (..)
   , HasMessage (..)
+  , getPersonInfo
+  , getUnitInfo
   , getUserUnits
   , getUnitMembers
   , getUnitChildren
@@ -23,6 +25,8 @@ import CSDC.DAO.Types
   , Subpart (..)
   , Message (..)
   , Reply (..)
+  , PersonInfo (..)
+  , UnitInfo (..)
   , Inbox (..)
   )
 
@@ -101,6 +105,41 @@ class
   inboxPerson :: Id Person -> m Inbox
 
   inboxUnit :: Id Unit -> m Inbox
+
+
+getPersonInfo :: HasDAO m => Id Person -> m (Maybe PersonInfo)
+getPersonInfo uid =
+  select @Person uid >>= \case
+    Nothing -> pure Nothing
+    Just person -> do
+      membersList <- selectRelationL @Member uid
+      pairs <- forM membersList $ \(Member _ unitId) ->
+        fmap (WithId unitId) <$> select @Unit unitId
+      case sequence pairs of
+        Nothing ->
+          pure Nothing
+        Just members ->
+          pure $ Just PersonInfo
+            { personInfo_id = uid
+            , personInfo_person = person
+            , personInfo_members = members
+            }
+
+getUnitInfo :: HasDAO m => Id Unit -> m (Maybe UnitInfo)
+getUnitInfo uid =
+  select @Unit uid >>= \case
+    Nothing -> pure Nothing
+    Just unit -> do
+      members <- getUnitMembers uid
+      children <- getUnitChildren uid
+      parents <- getUnitParents uid
+      pure $ Just UnitInfo
+        { unitInfo_id = uid
+        , unitInfo_unit = unit
+        , unitInfo_members = members
+        , unitInfo_children = children
+        , unitInfo_parents = parents
+        }
 
 getUserUnits :: HasDAO m => Id Person -> m (IdMap Member Unit)
 getUserUnits uid = do
