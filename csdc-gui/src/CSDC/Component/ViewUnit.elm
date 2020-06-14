@@ -35,11 +35,8 @@ type ViewSelected
   | ViewSelectedUnit (Id Unit)
 
 type alias Model =
-  { id : Maybe (Id Unit)
-  , unit : Maybe Unit
-  , members : IdMap Member (WithId Person)
-  , subparts : IdMap Subpart (WithId Unit)
-  , panelSubparts : Panel.Model (Id Subpart)
+  { info : Maybe UnitInfo
+  , panelChildren : Panel.Model (Id Subpart)
   , panelMembers : Panel.Model (Id Member)
   , notification : Notification
   , editName : EditableMode
@@ -50,11 +47,8 @@ type alias Model =
 
 initial : Model
 initial =
-  { id = Nothing
-  , unit = Nothing
-  , subparts = idMapEmpty
-  , members = idMapEmpty
-  , panelSubparts = Panel.initial "Sub-Units"
+  { info = Nothing
+  , panelChildren = Panel.initial "Sub-Units"
   , panelMembers = Panel.initial "Members"
   , notification = Notification.Empty
   , editName = EditableModeShow
@@ -63,16 +57,23 @@ initial =
   , inbox = emptyInbox
   }
 
+setup : Id Unit -> Cmd Msg
+setup id =
+  Cmd.batch
+    [ Cmd.map APIMsg <| API.getUnitInfo id
+    , Cmd.map APIMsg <| API.unitInbox id
+    ]
+
 canEdit : Maybe UserId -> Model -> Bool
 canEdit mid model =
   case mid of
     Nothing -> False
     Just Admin -> True
     Just (User id) ->
-      case model.unit of
+      case model.info of
         Nothing -> False
-        Just unit ->
-          case idMapLookup unit.chair model.members of
+        Just info ->
+          case idMapLookup info.unit.chair info.members of
             Nothing -> False
             Just member -> id == member.id
 
@@ -80,9 +81,12 @@ isMember : Maybe UserId -> Model -> Maybe (Id Person)
 isMember mid model =
   case mid of
     Just (User id) ->
-      if idMapAny (\user -> user.id == id) model.members
-      then Nothing
-      else Just id
+      case model.info of
+        Nothing -> Nothing
+        Just info ->
+          if idMapAny (\user -> user.id == id) info.members
+          then Nothing
+          else Just id
     _ ->
       Nothing
 
@@ -117,14 +121,14 @@ update msg model =
       case m of
         Panel.SetSelected (Just id) ->
           ( { model
-            | panelSubparts = Panel.update m model.panelSubparts
+            | panelChildren = Panel.update m model.panelChildren
             , selected = SelectedUnit id
             }
           , Cmd.none
           )
 
         _ ->
-          ( { model | panelSubparts = Panel.update m model.panelSubparts }
+          ( { model | panelChildren = Panel.update m model.panelChildren }
           , Cmd.none
           )
 
@@ -150,18 +154,24 @@ update msg model =
           , Cmd.none
           )
         EditableUpdate name ->
+          let
+            setName unit nam = { unit | name = nam }
+          in
           ( { model
-            | unit = Maybe.map (\unit -> { unit | name = name }) model.unit
+            | info =
+                Maybe.map
+                  (\info -> { info | unit = setName info.unit name })
+                  model.info
             }
           , Cmd.none
           )
         EditableSave ->
           ( { model | editName = EditableModeShow }
-          , case Maybe.map2 pair model.id model.unit of
+          , case model.info of
               Nothing ->
                 Cmd.none
-              Just (id, unit) ->
-                Cmd.map APIMsg <| API.updateUnit id unit
+              Just info ->
+                Cmd.map APIMsg <| API.updateUnit info.id info.unit
           )
 
     EditDescription m ->
@@ -171,18 +181,24 @@ update msg model =
           , Cmd.none
           )
         EditableUpdate description ->
+          let
+            setDesc unit desc = { unit | description = desc }
+          in
           ( { model
-            | unit = Maybe.map (\unit -> { unit | description = description }) model.unit
+            | info =
+                Maybe.map
+                  (\info -> { info | unit = setDesc info.unit description })
+                  model.info
             }
           , Cmd.none
           )
         EditableSave ->
           ( { model | editDescription = EditableModeShow }
-          , case Maybe.map2 pair model.id model.unit of
+          , case model.info of
               Nothing ->
                 Cmd.none
-              Just (id, unit) ->
-                Cmd.map APIMsg <| API.updateUnit id unit
+              Just info ->
+                Cmd.map APIMsg <| API.updateUnit info.id info.unit
           )
 
     View selected ->
@@ -194,20 +210,20 @@ update msg model =
 
         ViewSelectedUnit id ->
           ( model
-          , Cmd.map APIMsg <| API.selectUnit id
+          , Cmd.map APIMsg <| API.getUnitInfo id
           )
 
     SendSubmission personId ->
-      case model.id of
+      case model.info of
         Nothing -> (model, Cmd.none)
-        Just unitId ->
+        Just info ->
           let
             submission =
               Message
                 { mtype = Submission
                 , text = "I want to be part of the unit."
                 , status = Waiting
-                , value = makeMember personId unitId
+                , value = makeMember personId info.id
                 }
           in
             ( model
@@ -221,22 +237,36 @@ update msg model =
 
     APIMsg apimsg ->
       case apimsg of
-        API.SelectUnit id result ->
+        API.GetUnitInfo result ->
           case result of
             Err err ->
               ( { model | notification = Notification.HttpError err }
               , Cmd.none
               )
-            Ok unit ->
-              ( { model
-                | id = Just id, unit = Just unit, selected = SelectedNothing
-                }
-              , Cmd.batch
-                  [ Cmd.map APIMsg <| API.getUnitMembers id
-                  , Cmd.map APIMsg <| API.getUnitChildren id
-                  , Cmd.map APIMsg <| API.unitInbox id
-                  ]
-              )
+            Ok info ->
+              let
+                pairsMembers =
+                  idMapToList info.members |>
+                  List.map (\(id,withid) -> (id, withid.value.name))
+
+                panelMembers =
+                  Panel.update (Panel.SetItems pairsMembers) model.panelMembers
+
+                pairsChildren =
+                  idMapToList info.children |>
+                  List.map (\(id,withid) -> (id, withid.value.name))
+
+                panelChildren =
+                  Panel.update (Panel.SetItems pairsChildren) model.panelChildren
+              in
+                ( { model
+                  | info = Just info
+                  , panelMembers = panelMembers
+                  , panelChildren = panelChildren
+                  , selected = SelectedNothing
+                  }
+                , Cmd.none
+                )
 
         API.UpdateUnit result ->
           case result of
@@ -260,42 +290,6 @@ update msg model =
               , Cmd.none
               )
 
-        API.GetUnitMembers result ->
-          case result of
-            Err err ->
-              ( { model | notification = Notification.HttpError err }
-              , Cmd.none
-              )
-            Ok members ->
-              let
-                pairs =
-                  idMapToList members |>
-                  List.map (\(id,withid) -> (id, withid.value.name))
-
-                panelMembers = Panel.update (Panel.SetItems pairs) model.panelMembers
-              in
-                ( { model | members = members, panelMembers = panelMembers }
-                , Cmd.none
-                )
-
-        API.GetUnitChildren result ->
-          case result of
-            Err err ->
-              ( { model | notification = Notification.HttpError err }
-              , Cmd.none
-              )
-            Ok subparts ->
-              let
-                pairs =
-                  idMapToList subparts |>
-                  List.map (\(id,withid) -> (id, withid.value.name))
-
-                panelSubparts = Panel.update (Panel.SetItems pairs) model.panelSubparts
-              in
-                ( { model | subparts = subparts, panelSubparts = panelSubparts }
-                , Cmd.none
-                )
-
         API.SendMessageMember result ->
           case result of
             Err err ->
@@ -304,9 +298,9 @@ update msg model =
               )
             Ok _ ->
               ( model
-              , case model.id of
+              , case model.info of
                   Nothing -> Cmd.none
-                  Just id -> Cmd.map APIMsg <| API.unitInbox id
+                  Just info -> Cmd.map APIMsg <| API.unitInbox info.id
               )
 
         _ ->
@@ -317,13 +311,13 @@ update msg model =
 
 view : Maybe UserId -> Model -> List (Element Msg)
 view mid model =
-  case model.unit of
+  case model.info of
     Nothing ->
       [ text "Loading..."
       ] ++
       Notification.view model.notification
 
-    Just unit ->
+    Just info ->
       [ row
           [ Font.bold, Font.size 30 ]
           [ text "Unit Viewer" ]
@@ -331,28 +325,25 @@ view mid model =
           { canEdit = canEdit mid model
           , mode = model.editName
           , label = "Name"
-          , value = unit.name
+          , value = info.unit.name
           , event = EditName
           }
       , editableMultiline
           { canEdit = canEdit mid model
           , mode = model.editDescription
           , label = "Description"
-          , value = unit.description
+          , value = info.unit.description
           , event = EditDescription
           }
       , row []
           [ text <| "Chair: " ++
-              case idMapLookup unit.chair model.members of
+              case idMapLookup info.unit.chair info.members of
                 Nothing -> "Loading..."
                 Just withid -> withid.value.name
           ]
       , row [] <|
           if canEdit mid model
-          then
-            case model.id of
-              Nothing -> []
-              Just id -> [ button (ViewAdmin id) "Admin" ]
+          then [ button (ViewAdmin info.id) "Admin" ]
           else []
       , row [] <|
           case isMember mid model of
@@ -366,7 +357,7 @@ view mid model =
           , width fill
           , spacing 10
           ]
-          [ map SubpartsMsg <| Panel.view model.panelSubparts
+          [ map SubpartsMsg <| Panel.view model.panelChildren
           , map MembersMsg <| Panel.view model.panelMembers
           ]
       , case model.selected of
@@ -378,7 +369,7 @@ view mid model =
               [ height <| fillPortion 1
               , width fill
               ] <|
-              case idMapLookup id model.members of
+              case idMapLookup id info.members of
                 Nothing ->
                   [ text "Loading..." ]
                 Just person ->
@@ -390,7 +381,7 @@ view mid model =
               [ height <| fillPortion 1
               , width fill
               ] <|
-              case idMapLookup id model.subparts of
+              case idMapLookup id info.children of
                 Nothing ->
                   [ text "Loading..." ]
                 Just subunit ->
