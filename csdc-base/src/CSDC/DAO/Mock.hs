@@ -126,7 +126,8 @@ instance MonadIO m => HasDAO (Mock m) where
         member_person (message_value m) == personId
 
       predMessageWaiting m =
-        message_status m == Waiting
+        message_status m == Waiting &&
+        message_type m == Invitation
 
     messageMemberAll <- IdMap.filter predMessageId <$> use store_messageMember
 
