@@ -124,7 +124,7 @@ update msg model =
 --------------------------------------------------------------------------------
 -- View
 
-view : Maybe UserId -> Model -> List (Element Msg)
+view : Maybe (User PersonInfo) -> Model -> List (Element Msg)
 view mid model =
   case model.id of
     Nothing ->

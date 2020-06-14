@@ -40,7 +40,7 @@ main =
 -- Model
 
 type alias Model =
-  { id : Maybe UserId
+  { info : Maybe (User PersonInfo)
   , menu : Menu.Model
   , admin : Admin.Model
   , viewPerson : ViewPerson.Model
@@ -56,7 +56,7 @@ init _ =
   let
     (explorer, explorerCmd) = Explorer.initial ()
   in
-    ( { id = Nothing
+    ( { info = Nothing
       , menu = Menu.initial
       , explorer = explorer
       , admin = Admin.initial
@@ -198,13 +198,30 @@ update msg model =
               , Cmd.none
               )
             Ok id ->
-              ( { model | id = Just id }
-              , case id of
-                  Admin ->
-                    Cmd.none
-                  User pid ->
-                    Cmd.map StudioMsg <| Studio.setup pid
+              case id of
+                Admin ->
+                  ( { model | info = Just Admin }
+                  , Cmd.none
+                  )
+                User pid ->
+                  ( model
+                  , Cmd.batch
+                      [ Cmd.map StudioMsg <| Studio.setup pid
+                      , Cmd.map APIMsg <| API.getPersonInfo pid
+                      ]
+                  )
+
+        API.GetPersonInfo result ->
+          case result of
+            Err err ->
+              ( { model | notification = Notification.HttpError err }
+              , Cmd.none
               )
+            Ok info ->
+              ( { model | info = Just (User info) }
+              , Cmd.none
+              )
+
 
         _ -> (model, Cmd.none)
 
@@ -252,11 +269,11 @@ mainPanel model =
 
       Menu.ViewUnit ->
         List.map (Element.map ViewUnitMsg) <|
-        ViewUnit.view model.id model.viewUnit
+        ViewUnit.view model.info model.viewUnit
 
       Menu.ViewUnitAdmin ->
         List.map (Element.map ViewUnitAdminMsg) <|
-        ViewUnitAdmin.view model.id model.viewUnitAdmin
+        ViewUnitAdmin.view model.info model.viewUnitAdmin
 
       Menu.Admin ->
         List.map (Element.map AdminMsg) <|

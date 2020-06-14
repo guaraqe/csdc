@@ -64,40 +64,40 @@ setup id =
     , Cmd.map APIMsg <| API.unitInbox id
     ]
 
-canEdit : Maybe UserId -> Model -> Bool
+canEdit : Maybe (User PersonInfo) -> Model -> Bool
 canEdit mid model =
   case mid of
     Nothing -> False
     Just Admin -> True
-    Just (User id) ->
+    Just (User pinfo) ->
       case model.info of
         Nothing -> False
         Just info ->
           case idMapLookup info.unit.chair info.members of
             Nothing -> False
-            Just member -> id == member.id
+            Just member -> pinfo.id == member.id
 
-isMember : Maybe UserId -> Model -> Maybe (Id Person)
+isMember : Maybe (User PersonInfo) -> Model -> Maybe (Id Person)
 isMember mid model =
   case mid of
-    Just (User id) ->
+    Just (User pinfo) ->
       case model.info of
         Nothing -> Nothing
         Just info ->
-          if idMapAny (\user -> user.id == id) info.members
+          if idMapAny (\user -> user.id == pinfo.id) info.members
           then Nothing
-          else Just id
+          else Just pinfo.id
     _ ->
       Nothing
 
-isPending : Maybe UserId -> Model -> Bool
+isPending : Maybe (User PersonInfo) -> Model -> Bool
 isPending mid model =
   let
     getMessagePerson (Message m) = getMemberPerson m.value
   in
   case mid of
-    Just (User id) ->
-      idMapAny (\m -> getMessagePerson m == id) model.inbox.messageMember
+    Just (User info) ->
+      idMapAny (\m -> getMessagePerson m == info.id) model.inbox.messageMember
     _ ->
       False
 
@@ -309,7 +309,7 @@ update msg model =
 --------------------------------------------------------------------------------
 -- View
 
-view : Maybe UserId -> Model -> List (Element Msg)
+view : Maybe (User PersonInfo) -> Model -> List (Element Msg)
 view mid model =
   case model.info of
     Nothing ->
