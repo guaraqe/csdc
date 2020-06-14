@@ -42,6 +42,7 @@ type alias Model =
   , editName : EditableMode
   , editDescription : EditableMode
   , selected : Selected
+  , invited : Maybe (Id Unit)
   , inbox : Inbox
   }
 
@@ -54,6 +55,7 @@ initial =
   , editName = EditableModeShow
   , editDescription = EditableModeShow
   , selected = SelectedNothing
+  , invited = Nothing
   , inbox = emptyInbox
   }
 
@@ -90,8 +92,8 @@ isMember mid model =
     _ ->
       Nothing
 
-isPending : Maybe (User PersonInfo) -> Model -> Bool
-isPending mid model =
+isMemberPending : Maybe (User PersonInfo) -> Model -> Bool
+isMemberPending mid model =
   let
     getMessagePerson (Message m) = getMemberPerson m.value
   in
@@ -113,6 +115,8 @@ type Msg
   | View ViewSelected
   | SendSubmission (Id Person)
   | ViewAdmin (Id Unit)
+  | SelectInvitation (Id Unit)
+  | Invite
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -235,6 +239,31 @@ update msg model =
       , Cmd.none
       )
 
+    SelectInvitation id ->
+      ( { model | invited = Just id }
+      , Cmd.none
+      )
+
+    Invite ->
+      case Maybe.map2 pair model.invited model.info of
+        Nothing ->
+          ( model
+          , Cmd.none
+          )
+        Just (invited, info) ->
+          let
+            invite =
+              Message
+                { mtype = Invitation
+                , text = "I want you to be part of the unit."
+                , status = Waiting
+                , value = Subpart invited info.id
+                }
+          in
+            ( model
+            , Cmd.map APIMsg <| API.sendMessageSubpart invite
+            )
+
     APIMsg apimsg ->
       case apimsg of
         API.GetUnitInfo result ->
@@ -303,6 +332,19 @@ update msg model =
                   Just info -> Cmd.map APIMsg <| API.unitInbox info.id
               )
 
+        API.SendMessageSubpart result ->
+          case result of
+            Err err ->
+              ( { model | notification = Notification.HttpError err }
+              , Cmd.none
+              )
+            Ok _ ->
+              ( model
+              , case model.info of
+                  Nothing -> Cmd.none
+                  Just info -> Cmd.map APIMsg <| API.unitInbox info.id
+              )
+
         _ ->
           (model, Cmd.none)
 
@@ -349,9 +391,20 @@ view mid model =
           case isMember mid model of
             Nothing -> []
             Just id ->
-              if isPending mid model
+              if isMemberPending mid model
               then [ text "Your submission was sent." ]
               else [ button (SendSubmission id) "Become a member" ]
+      , row [] <|
+          case mid of
+            Just (User pinfo) ->
+              let
+                units = personInfoChair pinfo
+              in
+               if List.isEmpty units
+               then []
+               else invitation model.invited units SelectInvitation Invite
+            _ ->
+              []
       , row
           [ height <| fillPortion 1
           , width fill
@@ -390,3 +443,28 @@ view mid model =
 
       ] ++
       Notification.view model.notification
+
+--------------------------------------------------------------------------------
+-- Input
+
+invitation :
+  Maybe (Id a) ->
+  List (Id a, { a | name : String }) ->
+  (Id a -> msg) ->
+  msg ->
+  List (Element msg)
+invitation selected units makeEvent invite =
+  let
+    makeOption (id, unit) = Input.option id (text unit.name)
+  in
+    [ Input.radioRow
+        [ padding 10
+        , spacing 20
+        ]
+        { onChange = makeEvent
+        , selected = selected
+        , label = Input.labelAbove [] (text "Invite this unit.")
+        , options = List.map makeOption units
+        }
+    , button invite "Invite"
+    ]

@@ -108,7 +108,7 @@ update msg model =
       case m of
         Explorer.ViewUnit uid ->
             ( { model | menu = Menu.ViewUnit }
-            , Cmd.map (ViewUnitMsg << ViewUnit.APIMsg) (API.selectUnit uid)
+            , Cmd.map (ViewUnitMsg << ViewUnit.APIMsg) (API.getUnitInfo uid)
             )
         _ ->
           let
@@ -129,7 +129,7 @@ update msg model =
         case m of
           Studio.View (Studio.ViewSelectedUnit uid) ->
             ( { newModel | menu = Menu.ViewUnit }
-            , Cmd.map (ViewUnitMsg << ViewUnit.APIMsg) (API.selectUnit uid)
+            , Cmd.map (ViewUnitMsg << ViewUnit.APIMsg) (API.getUnitInfo uid)
             )
 
           Studio.APIMsg (API.CreateUnit result) ->
@@ -141,7 +141,7 @@ update msg model =
               Ok member ->
                 ( { newModel | menu = Menu.ViewUnit }
                 , Cmd.map (ViewUnitMsg << ViewUnit.APIMsg)
-                    <| API.selectUnit (getMemberUnit member.value)
+                    <| API.getUnitInfo (getMemberUnit member.value)
                 )
 
           _ -> (newModel, newCmd)
@@ -154,7 +154,7 @@ update msg model =
           ViewPerson.ViewSelected id ->
             ( { model | menu = Menu.ViewUnit }
             , Cmd.map (ViewUnitMsg << ViewUnit.APIMsg) <|
-              API.selectUnit id
+              API.getUnitInfo id
             )
           _ ->
             ( { model | viewPerson = viewPerson }

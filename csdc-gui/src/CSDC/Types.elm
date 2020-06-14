@@ -132,6 +132,17 @@ decodePersonInfo =
     (Decoder.field "person" decodePerson)
     (Decoder.field "members" (decodeIdMap (decodeWithId decodeUnit)))
 
+-- List units of which the person is chair.
+personInfoChair : PersonInfo -> List (Id Unit, Unit)
+personInfoChair info =
+  let
+    f (id, unit) =
+      if unit.value.chair == id
+      then Just (unit.id, unit.value)
+      else Nothing
+  in
+    List.filterMap f <| idMapToList info.members
+
 --------------------------------------------------------------------------------
 -- Unit
 
