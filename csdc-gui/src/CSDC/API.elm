@@ -64,10 +64,10 @@ rootPerson =
     , expect = Http.expectJson RootPerson (decodeUser decodeId)
     }
 
-getPersonInfo : Cmd Msg
-getPersonInfo =
+getPersonInfo : Id Person -> Cmd Msg
+getPersonInfo id =
   Http.get
-    { url = baseUrl ++ "person/info"
+    { url = baseUrl ++ "person/" ++ idToString id ++ "/info"
     , expect = Http.expectJson GetPersonInfo decodePersonInfo
     }
 
@@ -114,10 +114,10 @@ rootUnit =
     , expect = Http.expectJson RootUnit decodeId
     }
 
-getUnitInfo : Cmd Msg
-getUnitInfo =
+getUnitInfo : Id Unit -> Cmd Msg
+getUnitInfo id =
   Http.get
-    { url = baseUrl ++ "unit/info"
+    { url = baseUrl ++ "unit/" ++ idToString id ++ "/info"
     , expect = Http.expectJson GetUnitInfo decodeUnitInfo
     }
 

@@ -198,23 +198,13 @@ update msg model =
               , Cmd.none
               )
             Ok id ->
-              let
-                studio = model.studio
-                newStudio =
-                  case id of
-                    User uid -> { studio | id = Just uid }
-                    Admin -> studio
-              in
-                ( { model
-                  | id = Just id
-                  , studio = newStudio
-                  }
-                , case id of
-                    Admin ->
-                      Cmd.none
-                    User pid ->
-                      Cmd.map StudioMsg <| Studio.setup pid
-                )
+              ( { model | id = Just id }
+              , case id of
+                  Admin ->
+                    Cmd.none
+                  User pid ->
+                    Cmd.map StudioMsg <| Studio.setup pid
+              )
 
         _ -> (model, Cmd.none)
 

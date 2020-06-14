@@ -33,10 +33,7 @@ type Selected
   | SelectedInbox InboxId
 
 type alias Model =
-  { id : Maybe (Id Person)
-  , person : Maybe Person
-  , member : IdMap Member Member
-  , units : IdMap Member Unit
+  { info : Maybe PersonInfo
   , panelUnits : Panel.Model (Id Member)
   , panelMessages : Panel.Model InboxId
   , notification : Notification
@@ -46,10 +43,7 @@ type alias Model =
 
 initial : Model
 initial =
-  { id = Nothing
-  , person = Nothing
-  , member = idMapEmpty
-  , units = idMapEmpty
+  { info = Nothing
   , panelUnits = Panel.initial "Units"
   , panelMessages = Panel.initial "Messages"
   , notification = Notification.Empty
@@ -61,9 +55,7 @@ setup : Id Person -> Cmd Msg
 setup id =
   Cmd.map APIMsg <|
   Cmd.batch
-    [ API.selectPerson id
-    , API.selectMemberPerson id
-    , API.unitsPerson id
+    [ API.getPersonInfo id
     , API.personInbox id
     ]
 
@@ -140,52 +132,30 @@ update msg model =
 
     CreateUnit ->
       ( model
-      , case model.id of
+      , case model.info of
           Nothing -> Cmd.none
-          Just id -> Cmd.map APIMsg <| API.createUnit id
+          Just info -> Cmd.map APIMsg <| API.createUnit info.id
       )
 
     APIMsg apimsg ->
       case apimsg of
-        API.SelectPerson _ result ->
+        API.GetPersonInfo result ->
           case result of
             Err err ->
               ( { model | notification = Notification.HttpError err }
               , Cmd.none
               )
-            Ok person ->
-              ( { model | person = Just person }
-              , Cmd.none
-              )
-
-        API.SelectMemberPerson result ->
-          case result of
-            Err err ->
-              ( { model | notification = Notification.HttpError err }
-              , Cmd.none
-              )
-            Ok member ->
-              ( { model | member = member }
-              , Cmd.none
-              )
-
-        API.UnitsPerson result ->
-          case result of
-            Err err ->
-              ( { model | notification = Notification.HttpError err }
-              , Cmd.none
-              )
-            Ok units ->
+            Ok info ->
               let
                 pairs =
-                  idMapToList units |>
-                  List.map (\(uid,unit) -> (uid,unit.name))
+                  idMapToList info.members |>
+                  List.map (\(uid,unit) -> (uid,unit.value.name))
 
                 panelUnits = Panel.update (Panel.SetItems pairs) model.panelUnits
               in
-              ( { model | panelUnits = panelUnits, units = units }
-              , Cmd.none
-              )
+                ( { model | info = Just info, panelUnits = panelUnits }
+                , Cmd.none
+                )
 
         API.PersonInbox result ->
           case result of
@@ -211,14 +181,14 @@ update msg model =
               )
 
             Ok _ ->
-              case model.id of
+              case model.info of
                 Nothing ->
                   ( model
                   , Cmd.none
                   )
-                Just id ->
+                Just info ->
                   ( model
-                  , setup id
+                  , setup info.id
                   )
 
         _ ->
@@ -229,27 +199,27 @@ update msg model =
 
 view : Model -> List (Element Msg)
 view model =
-  case model.person of
+  case model.info of
     Nothing ->
       [ text "Loading..."
       ] ++
       Notification.view model.notification
 
-    Just person ->
+    Just info ->
       [ row
           [ Font.bold, Font.size 30 ]
           [ text "Studio" ]
       , row []
-          [ text person.name ]
+          [ text info.person.name ]
       , row []
           [ el [ Font.bold ] (text "ORCID ID: ")
           , newTabLink []
-              { url = "https://orcid.org/" ++ person.orcid
-              , label = text person.orcid
+              { url = "https://orcid.org/" ++ info.person.orcid
+              , label = text info.person.orcid
               }
           ]
       , row []
-          [ text person.description ]
+          [ text info.person.description ]
       , row []
           [ button CreateUnit "Create New Unit" ]
       , row
@@ -269,16 +239,12 @@ view model =
               [ height <| fillPortion 1
               , width fill
               ] <|
-              case
-                Maybe.map2 pair
-                  (idMapLookup id model.member)
-                  (idMapLookup id model.units)
-                of
+              case idMapLookup id info.members of
                 Nothing ->
                   [ text "Error." ]
-                Just (Member member, unit) ->
-                  PreviewUnit.view unit <|
-                  View (ViewSelectedUnit member.unit)
+                Just unit ->
+                  PreviewUnit.view unit.value <|
+                  View (ViewSelectedUnit unit.id)
 
           SelectedInbox inboxId ->
             row
