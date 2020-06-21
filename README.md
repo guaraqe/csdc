@@ -2,6 +2,9 @@
 
 ![build](https://github.com/guaraqe/csdc/workflows/build/badge.svg)
 
+This repository contains a work-in-progress webapp for the CSDC DAO. It
+currently has two components: a server and a GUI.
+
 ## Development
 
 This projects uses [Nix](https://nixos.org/download.html) to manage
