@@ -1,5 +1,7 @@
 # CSDC DAO
 
+![build](https://github.com/guaraqe/csdc/workflows/build/badge.svg)
+
 ## Development
 
 This projects uses [Nix](https://nixos.org/download.html) to manage
@@ -33,7 +35,7 @@ make gui-build
 ```
 
 Second, you will need to obtain an ID and a secret from
-[Orcid](https://orcid.org/developer-tools), and write them to the `secret.json`
+[ORCID](https://orcid.org/developer-tools), and write them to the `secret.json`
 file, which should follow the model of the `secret-model.json` file.
 
 Finally, run:
