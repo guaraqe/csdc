@@ -11,6 +11,8 @@ import CSDC.Input
 import CSDC.Notification as Notification
 import CSDC.Notification exposing (Notification)
 import CSDC.Types exposing (..)
+import Field exposing (Field)
+import Validation exposing (Validation)
 
 import Element exposing (..)
 import Element.Font as Font
@@ -21,13 +23,13 @@ import String
 -- Model
 
 type alias Model =
-  { chair : Maybe (Id Person)
+  { chair : Field String (Id Person)
   , notification : Notification
   }
 
 initial : Model
 initial =
-  { chair = Nothing
+  { chair = Field.requiredId "Chair"
   , notification = Notification.Empty
   }
 
@@ -43,18 +45,18 @@ type Msg
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    InputId chair ->
-      ( { model | chair = idFromString chair }
+    InputId str ->
+      ( { model | chair = Field.set str model.chair }
       , Cmd.none
       )
 
     Submit ->
-      case model.chair of
-        Nothing ->
-          ( { model | notification = Notification.Error "Chair must not be empty!" }
+      case Validation.validate (Field.validate model.chair) of
+        Err e ->
+          ( { model | notification = Notification.Error e }
           , Cmd.none
           )
-        Just id ->
+        Ok id ->
           ( { model | notification = Notification.Processing }
           , Cmd.map APIMsg <| API.createUnit id
           )
@@ -93,7 +95,7 @@ view model =
         { onChange = InputId
         , placeholder = Nothing
         , label = Input.labelAbove [] (text "Chair Id")
-        , text = Maybe.withDefault "" (Maybe.map idToString model.chair)
+        , text = Field.raw model.chair
         }
     , CSDC.Input.button Submit "Submit"
     ] ++ Notification.view model.notification

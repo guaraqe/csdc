@@ -11,6 +11,8 @@ import CSDC.Input
 import CSDC.Notification as Notification
 import CSDC.Notification exposing (Notification)
 import CSDC.Types exposing (..)
+import Field exposing (Field)
+import Validation exposing (Validation)
 
 import Element exposing (..)
 import Element.Font as Font
@@ -21,13 +23,13 @@ import String
 -- Model
 
 type alias Model =
-  { name : Maybe String
+  { name : Field String String
   , notification : Notification
   }
 
 initial : Model
 initial =
-  { name = Nothing
+  { name = Field.requiredString "Name"
   , notification = Notification.Empty
   }
 
@@ -44,23 +46,17 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     InputName name ->
-      let
-        newName =
-          if String.isEmpty name
-          then Nothing
-          else Just name
-      in
-        ( { model | name = newName }
-        , Cmd.none
-        )
+      ( { model | name = Field.set name model.name }
+      , Cmd.none
+      )
 
     Submit ->
-      case model.name of
-        Nothing ->
-          ( { model | notification = Notification.Error "Name must not be empty!" }
+      case Validation.validate (Field.validate model.name) of
+        Err e ->
+          ( { model | notification = Notification.Error e }
           , Cmd.none
           )
-        Just name ->
+        Ok name ->
           ( { model | notification = Notification.Processing }
           , Cmd.map APIMsg <| API.insertPerson (Person name "ORCID" "")
           )
@@ -99,7 +95,7 @@ view model =
         { onChange = InputName
         , placeholder = Nothing
         , label = Input.labelAbove [] (text "Name")
-        , text = Maybe.withDefault "" model.name
+        , text = Field.raw model.name
         }
     , CSDC.Input.button Submit "Submit"
     ] ++ Notification.view model.notification

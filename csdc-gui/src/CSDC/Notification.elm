@@ -12,7 +12,7 @@ type Notification
   = Empty
   | Processing
   | Success
-  | Error String
+  | Error (List String)
   | HttpError Http.Error
 
 view : Notification -> List (Element msg)
@@ -27,8 +27,8 @@ view notification =
     Success ->
       [ text "Success!" ]
 
-    Error msg ->
-      [ text <| "Error: " ++ msg ]
+    Error msgs ->
+      [ text "Error: " ] ++ List.map text msgs
 
     HttpError err ->
       case err of

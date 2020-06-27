@@ -11,6 +11,8 @@ import CSDC.Input
 import CSDC.Notification as Notification
 import CSDC.Notification exposing (Notification)
 import CSDC.Types exposing (..)
+import Field exposing (Field)
+import Validation exposing (Validation)
 
 import Element exposing (..)
 import Element.Font as Font
@@ -21,15 +23,15 @@ import String
 -- Model
 
 type alias Model =
-  { person : Maybe (Id Person)
-  , unit : Maybe (Id Unit)
+  { person : Field String (Id Person)
+  , unit : Field String (Id Unit)
   , notification : Notification
   }
 
 initial : Model
 initial =
-  { person = Nothing
-  , unit = Nothing
+  { person = Field.requiredId "Person"
+  , unit = Field.requiredId "Unit"
   , notification = Notification.Empty
   }
 
@@ -47,37 +49,31 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     InputPerson str ->
-      let
-        newPerson =
-          case String.toInt str of
-            Nothing -> Nothing
-            Just n -> Just (Id n)
-      in
-        ( { model | person = newPerson }
-        , Cmd.none
-        )
+      ( { model | person = Field.set str model.person }
+      , Cmd.none
+      )
 
     InputUnit str ->
-      let
-        newUnit =
-          case String.toInt str of
-            Nothing -> Nothing
-            Just n -> Just (Id n)
-      in
-        ( { model | unit = newUnit }
-        , Cmd.none
-        )
+      ( { model | unit = Field.set str model.unit }
+      , Cmd.none
+      )
 
     Submit ->
-      case Maybe.map2 makeMember model.person model.unit of
-        Nothing ->
-          ( { model | notification = Notification.Error "Input wrong!" }
-          , Cmd.none
-          )
-        Just member ->
-          ( { model | notification = Notification.Processing }
-          , Cmd.map APIMsg <| API.insertMember member
-          )
+      let
+        result =
+          Validation.valid makeMember
+            |> Validation.andMap (Field.validate model.person)
+            |> Validation.andMap (Field.validate model.unit)
+      in
+        case Validation.validate result of
+          Err e ->
+            ( { model | notification = Notification.Error e }
+            , Cmd.none
+            )
+          Ok member ->
+            ( { model | notification = Notification.Processing }
+            , Cmd.map APIMsg <| API.insertMember member
+            )
 
     APIMsg apimsg ->
       case apimsg of
@@ -113,7 +109,7 @@ view model =
         { onChange = InputPerson
         , placeholder = Nothing
         , label = Input.labelAbove [] (text "Person")
-        , text = Maybe.withDefault "" (Maybe.map idToString model.person)
+        , text = Field.raw model.person
         }
 
     , Input.text
@@ -121,7 +117,7 @@ view model =
         { onChange = InputUnit
         , placeholder = Nothing
         , label = Input.labelAbove [] (text "Unit")
-        , text = Maybe.withDefault "" (Maybe.map idToString model.unit)
+        , text = Field.raw model.unit
         }
 
     , CSDC.Input.button Submit "Submit"

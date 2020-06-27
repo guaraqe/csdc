@@ -11,6 +11,8 @@ import CSDC.Input
 import CSDC.Notification as Notification
 import CSDC.Notification exposing (Notification)
 import CSDC.Types exposing (..)
+import Field exposing (Field)
+import Validation exposing (Validation)
 
 import Element exposing (..)
 import Element.Font as Font
@@ -21,15 +23,15 @@ import String
 -- Model
 
 type alias Model =
-  { child : Maybe (Id Unit)
-  , parent : Maybe (Id Unit)
+  { child : Field String (Id Unit)
+  , parent : Field String (Id Unit)
   , notification : Notification
   }
 
 initial : Model
 initial =
-  { child = Nothing
-  , parent = Nothing
+  { child = Field.requiredId "Child"
+  , parent = Field.requiredId "Parent"
   , notification = Notification.Empty
   }
 
@@ -47,37 +49,31 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     InputChild str ->
-      let
-        newPerson =
-          case String.toInt str of
-            Nothing -> Nothing
-            Just n -> Just (Id n)
-      in
-        ( { model | child = newPerson }
-        , Cmd.none
-        )
+      ( { model | child = Field.set str model.child }
+      , Cmd.none
+      )
 
     InputParent str ->
-      let
-        newUnit =
-          case String.toInt str of
-            Nothing -> Nothing
-            Just n -> Just (Id n)
-      in
-        ( { model | parent = newUnit }
-        , Cmd.none
-        )
+      ( { model | parent = Field.set str model.parent }
+      , Cmd.none
+      )
 
     Submit ->
-      case Maybe.map2 Subpart model.child model.parent of
-        Nothing ->
-          ( { model | notification = Notification.Error "Input wrong!" }
-          , Cmd.none
-          )
-        Just member ->
-          ( { model | notification = Notification.Processing }
-          , Cmd.map APIMsg <| API.insertSubpart member
-          )
+      let
+        result =
+          Validation.valid Subpart
+            |> Validation.andMap (Field.validate model.child)
+            |> Validation.andMap (Field.validate model.parent)
+      in
+        case Validation.validate result of
+          Err e ->
+            ( { model | notification = Notification.Error e }
+            , Cmd.none
+            )
+          Ok subpart ->
+            ( { model | notification = Notification.Processing }
+            , Cmd.map APIMsg <| API.insertSubpart subpart
+            )
 
     APIMsg apimsg ->
       case apimsg of
@@ -113,7 +109,7 @@ view model =
         { onChange = InputChild
         , placeholder = Nothing
         , label = Input.labelAbove [] (text "Child")
-        , text = Maybe.withDefault "" (Maybe.map idToString model.child)
+        , text = Field.raw model.child
         }
 
     , Input.text
@@ -121,7 +117,7 @@ view model =
         { onChange = InputParent
         , placeholder = Nothing
         , label = Input.labelAbove [] (text "Parent")
-        , text = Maybe.withDefault "" (Maybe.map idToString model.parent)
+        , text = Field.raw model.parent
         }
 
     , CSDC.Input.button Submit "Submit"
