@@ -12,11 +12,11 @@ import CSDC.Notification as Notification
 import CSDC.Notification exposing (Notification)
 import CSDC.Types exposing (..)
 import Field exposing (Field)
+import Input
 import Validation exposing (Validation)
 
 import Element exposing (..)
 import Element.Font as Font
-import Element.Input as Input
 import String
 
 --------------------------------------------------------------------------------
@@ -91,11 +91,8 @@ view model =
         [ Font.bold, Font.size 30 ]
         [ text "New Unit" ]
     , Input.text
-        []
         { onChange = InputId
-        , placeholder = Nothing
-        , label = Input.labelAbove [] (text "Chair Id")
-        , text = Field.raw model.chair
+        , field = model.chair
         }
     , CSDC.Input.button Submit "Submit"
     ] ++ Notification.view model.notification

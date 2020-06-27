@@ -12,11 +12,11 @@ import CSDC.Notification as Notification
 import CSDC.Notification exposing (Notification)
 import CSDC.Types exposing (..)
 import Field exposing (Field)
+import Input
 import Validation exposing (Validation)
 
 import Element exposing (..)
 import Element.Font as Font
-import Element.Input as Input
 import String
 
 --------------------------------------------------------------------------------
@@ -104,20 +104,15 @@ view model =
     [ row
         [ Font.bold, Font.size 30 ]
         [ text "New Subpart" ]
+
     , Input.text
-        []
         { onChange = InputChild
-        , placeholder = Nothing
-        , label = Input.labelAbove [] (text "Child")
-        , text = Field.raw model.child
+        , field = model.child
         }
 
     , Input.text
-        []
         { onChange = InputParent
-        , placeholder = Nothing
-        , label = Input.labelAbove [] (text "Parent")
-        , text = Field.raw model.parent
+        , field = model.parent
         }
 
     , CSDC.Input.button Submit "Submit"

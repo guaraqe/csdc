@@ -12,11 +12,11 @@ import CSDC.Notification as Notification
 import CSDC.Notification exposing (Notification)
 import CSDC.Types exposing (..)
 import Field exposing (Field)
+import Input
 import Validation exposing (Validation)
 
 import Element exposing (..)
 import Element.Font as Font
-import Element.Input as Input
 import String
 
 --------------------------------------------------------------------------------
@@ -142,56 +142,41 @@ view model =
     , selectReplyType model
     , selectReplyStatus model
     , Input.text
-        []
         { onChange = InputMessage
-        , placeholder = Nothing
-        , label = Input.labelAbove [] (text "Message")
-        , text = Field.raw model.message
+        , field = model.message
         }
     , CSDC.Input.button Submit "Submit"
     ] ++ Notification.view model.notification
 
 selectReplyType : Model -> Element Msg
 selectReplyType model =
-  Input.radioRow
-    [ padding 10
-    , spacing 20
-    ]
+  Input.radio
     { onChange = InputReplyType
-    , selected = Field.raw model.replyType
-    , label = Input.labelAbove [] (text "Reply Type")
+    , field = model.replyType
     , options =
-        [ Input.option Accept (text "Accept")
-        , Input.option Reject (text "Reject")
+        [ (Accept, "Accept")
+        , (Reject, "Reject")
         ]
     }
 
 selectMessageType : Model -> Element Msg
 selectMessageType model =
-  Input.radioRow
-    [ padding 10
-    , spacing 20
-    ]
+  Input.radio
     { onChange = InputMessageType
-    , selected = Field.raw model.messageType
-    , label = Input.labelAbove [] (text "Message Type")
+    , field = model.messageType
     , options =
-        [ Input.option Invitation (text "Invitation")
-        , Input.option Submission (text "Submission")
+        [ (Invitation, "Invitation")
+        , (Submission, "Submission")
         ]
     }
 
 selectReplyStatus : Model -> Element Msg
 selectReplyStatus model =
-  Input.radioRow
-    [ padding 10
-    , spacing 20
-    ]
+  Input.radio
     { onChange = InputReplyStatus
-    , selected = Field.raw model.replyStatus
-    , label = Input.labelAbove [] (text "Reply Status")
+    , field = model.replyStatus
     , options =
-        [ Input.option Seen (text "Seen")
-        , Input.option NotSeen (text "Not Seen")
+        [ (Seen, "Seen")
+        , (NotSeen, "Not Seen")
         ]
     }

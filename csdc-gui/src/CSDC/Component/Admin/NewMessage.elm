@@ -12,11 +12,11 @@ import CSDC.Notification as Notification
 import CSDC.Notification exposing (Notification)
 import CSDC.Types exposing (..)
 import Field exposing (Field)
+import Input
 import Validation exposing (Validation)
 
 import Element exposing (..)
 import Element.Font as Font
-import Element.Input as Input
 import String
 
 --------------------------------------------------------------------------------
@@ -145,50 +145,35 @@ view model =
     , selectMessageType model
     , selectMessageStatus model
     , Input.text
-        []
         { onChange = InputPerson
-        , placeholder = Nothing
-        , label = Input.labelAbove [] (text "Person")
-        , text = Field.raw model.person
+        , field = model.person
         }
-
     , Input.text
-        []
         { onChange = InputUnit
-        , placeholder = Nothing
-        , label = Input.labelAbove [] (text "Unit")
-        , text = Field.raw model.unit
+        , field = model.unit
         }
     , CSDC.Input.button Submit "Submit"
     ] ++ Notification.view model.notification
 
 selectMessageType : Model -> Element Msg
 selectMessageType model =
-  Input.radioRow
-    [ padding 10
-    , spacing 20
-    ]
+  Input.radio
     { onChange = InputMessageType
-    , selected = Field.raw model.messageType
-    , label = Input.labelAbove [] (text "Message Type")
+    , field = model.messageType
     , options =
-        [ Input.option Invitation (text "Invitation")
-        , Input.option Submission (text "Submission")
+        [ (Invitation, "Invitation")
+        , (Submission, "Submission")
         ]
     }
 
 selectMessageStatus : Model -> Element Msg
 selectMessageStatus model =
-  Input.radioRow
-    [ padding 10
-    , spacing 20
-    ]
+  Input.radio
     { onChange = InputMessageStatus
-    , selected = Field.raw model.messageStatus
-    , label = Input.labelAbove [] (text "Message Status")
+    , field = model.messageStatus
     , options =
-        [ Input.option Waiting (text "Waiting")
-        , Input.option Accepted (text "Accepted")
-        , Input.option Rejected (text "Rejected")
+        [ (Waiting, "Waiting")
+        , (Accepted, "Accepted")
+        , (Rejected, "Rejected")
         ]
     }
