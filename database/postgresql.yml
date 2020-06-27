@@ -1,0 +1,35 @@
+# Based on https://github.com/khezen/compose-postgres
+
+version: '3.5'
+
+services:
+  db:
+    container_name: postgres_container_csdc
+    image: postgres:9.6-alpine
+    network_mode: "host"
+    restart: always
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: csdc
+      POSTGRES_DB: csdc
+      POSTGRES_PASSWORD: csdc
+
+  pgadmin:
+    container_name: pgadmin_container_csdc
+    network_mode: "host"
+    image: dpage/pgadmin4:4.10
+    environment:
+      SERVER_MODE: "False" # use desktop mode
+      PGADMIN_DEFAULT_EMAIL: csdc@csdc.com
+      PGADMIN_DEFAULT_PASSWORD: csdc
+      PGADMIN_LISTEN_PORT: 5555
+    volumes:
+      - pgadmin:/root/.pgadmin
+      # the servers.json file configures the database above
+      - ${PWD}/database/servers.json:/pgadmin4/servers.json
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  pgadmin:

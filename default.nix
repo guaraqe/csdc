@@ -31,6 +31,9 @@ let
             elmPackages.elm
             elm2nix
             nodePackages.uglify-js
+            # Database
+            docker-compose
+            postgresql
           ];
       };
 in

@@ -1,0 +1,12 @@
+{ "Servers":
+  { "1":
+    { "Name": "CSDC",
+      "Group": "Servers",
+      "Port": 5432,
+      "Username": "csdc",
+      "Host": "localhost",
+      "SSLMode": "prefer",
+      "MaintenanceDB": "csdc"
+    }
+  }
+}

@@ -3,3 +3,4 @@ www/*.js
 secret.json
 client_session_key.aes
 admin-cookies
+.docker

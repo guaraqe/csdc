@@ -11,7 +11,7 @@ serve: ## Launch the server.
 ################################################################################
 # GUI
 
-gui-build: ## Build the GUI into www/app.js
+gui-build: ## Build the GUI into www/app.js.
 	mkdir -p www
 	cd csdc-gui && elm make src/Main.elm --output ../www/app.js
 
@@ -56,6 +56,30 @@ elm-nix-update: ## Update Nix files for Elm.
 	cd csdc-gui && elm2nix convert > elm-srcs.nix
 
 .PHONY: elm-nix-update
+
+################################################################################
+# Database
+
+psql: ## Launch psql with the correct arguments.
+	PGHOST=localhost PGDATABASE=csdc PGPASSWORD=csdc PGPORT=5432 PGUSER=csdc psql
+
+.PHONY: psql
+
+################################################################################
+# Docker
+
+docker: ## Create and start the Docker image.
+	docker-compose --file database/postgresql.yml build
+	touch .docker
+	docker-compose --file database/postgresql.yml up -d
+
+.PHONY: docker
+
+docker-clean: ## Clean the Docker image.
+	docker-compose --file database/postgresql.yml down -v
+	rm -f .docker
+
+.PHONY: docker-clean
 
 ################################################################################
 # Help
