@@ -22,7 +22,9 @@ import qualified CSDC.Auth.ORCID as ORCID
 import Data.Aeson (decodeFileStrict)
 import Data.Aeson.Encode.Pretty (encodePretty)
 import Data.Text (Text)
+import System.Environment (lookupEnv)
 
+import Data.Text as Text
 import qualified Data.Text.Encoding as Text.Encoding
 import qualified Data.ByteString.Lazy.Char8 as ByteString
 
@@ -56,8 +58,15 @@ data Secret = Secret
   } deriving (Show, Eq, Generic)
     deriving (FromJSON, ToJSON) via JSON Secret
 
-readSecret :: MonadIO m => FilePath -> m (Maybe Secret)
-readSecret path = liftIO $ decodeFileStrict path
+-- | Read secrets either from a file, or from environment variables.
+readSecret :: MonadIO m => Maybe FilePath -> m (Maybe Secret)
+readSecret (Just path) = liftIO $ decodeFileStrict path
+readSecret Nothing = liftIO $ do
+  let env var = fmap Text.pack <$> lookupEnv var
+  mToken <- env "SECRET_TOKEN"
+  mOrcidId <- env "SECRET_ORCID_ID"
+  mOrcidSecret <- env "SECRET_ORCID_SECRET"
+  pure $ Secret <$> mToken <*> mOrcidId <*> mOrcidSecret
 
 --------------------------------------------------------------------------------
 -- Context

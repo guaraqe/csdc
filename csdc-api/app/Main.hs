@@ -17,25 +17,32 @@ import System.Environment (getArgs)
 
 import qualified Network.Wai.Middleware.Cors as Cors
 
-main :: IO ()
-main =
+args :: IO (FilePath, Maybe FilePath)
+args =
   getArgs >>= \case
+    configPath:[] ->
+      pure (configPath, Nothing)
     configPath:secretPath:[] ->
-      readConfig configPath >>= \case
-        Nothing ->
-          error "Could not parse the configuration file."
-        Just config ->
-          readSecret secretPath >>= \case
-            Nothing ->
-              error "Could not parse the secrets file."
-            Just secret -> do
-              putStrLn "Running the server with the following configuration:\n"
-              showConfig config
-              putStrLn ""
-              context <- activate config secret
-              mainWith context
+      pure (configPath, Just secretPath)
     _ ->
-      error "Usage: csdc-server CONFIG_PATH SECRET_PATH"
+      error "Usage: csdc-server CONFIG_PATH [SECRET_PATH]"
+
+main :: IO ()
+main = do
+  (configPath, secretPath) <- args
+  readConfig configPath >>= \case
+    Nothing ->
+      error "Could not parse the configuration file."
+    Just config ->
+      readSecret secretPath >>= \case
+        Nothing ->
+          error "Could not parse the secrets file."
+        Just secret -> do
+          putStrLn "Running the server with the following configuration:\n"
+          showConfig config
+          putStrLn ""
+          context <- activate config secret
+          mainWith context
 
 mainWith :: Context -> IO ()
 mainWith context = do
