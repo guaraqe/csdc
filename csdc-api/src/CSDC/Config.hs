@@ -23,6 +23,7 @@ import Data.Aeson (decodeFileStrict)
 import Data.Aeson.Encode.Pretty (encodePretty)
 import Data.Text (Text)
 import System.Environment (lookupEnv)
+import Text.Read (readMaybe)
 
 import Data.Text as Text
 import qualified Data.Text.Encoding as Text.Encoding
@@ -39,7 +40,18 @@ data Config = Config
     deriving (FromJSON, ToJSON) via JSON Config
 
 readConfig :: MonadIO m => FilePath -> m (Maybe Config)
-readConfig path = liftIO $ decodeFileStrict path
+readConfig path = liftIO $ do
+  mconfig <- decodeFileStrict path
+  mport <- lookupEnv "PORT"
+  case readMaybe =<< mport of
+    Nothing ->
+      pure mconfig
+    Just port ->
+      case mconfig of
+        Nothing ->
+          pure Nothing
+        Just config ->
+          pure $ Just config { config_port = port }
 
 showConfig :: MonadIO m => Config -> m ()
 showConfig config =
