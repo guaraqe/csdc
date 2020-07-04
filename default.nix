@@ -34,6 +34,8 @@ let
             # Database
             docker-compose
             postgresql
+            # Deployment
+            heroku
           ];
       };
 in
