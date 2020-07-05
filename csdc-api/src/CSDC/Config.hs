@@ -18,6 +18,7 @@ import CSDC.Prelude
 import qualified CSDC.Auth as Auth
 import qualified CSDC.Auth.Admin as Admin
 import qualified CSDC.Auth.ORCID as ORCID
+import qualified CSDC.SQL as SQL
 
 import Data.Aeson (decodeFileStrict)
 import Data.Aeson.Encode.Pretty (encodePretty)
@@ -36,6 +37,7 @@ data Config = Config
   { config_port :: Int
   , config_path :: FilePath
   , config_orcidEndpoint :: ORCID.Endpoint
+  , config_sql :: SQL.Config
   } deriving (Show, Eq, Generic)
     deriving (FromJSON, ToJSON) via JSON Config
 
@@ -67,6 +69,7 @@ data Secret = Secret
   { secret_token :: Text
   , secret_orcidId :: Text
   , secret_orcidSecret :: Text
+  , secret_sql :: SQL.Secret
   } deriving (Show, Eq, Generic)
     deriving (FromJSON, ToJSON) via JSON Secret
 
@@ -78,7 +81,10 @@ readSecret Nothing = liftIO $ do
   mToken <- env "SECRET_TOKEN"
   mOrcidId <- env "SECRET_ORCID_ID"
   mOrcidSecret <- env "SECRET_ORCID_SECRET"
-  pure $ Secret <$> mToken <*> mOrcidId <*> mOrcidSecret
+  mSql <- do
+    str <- env "SECRET_POSTGRESQL"
+    pure $ SQL.Secret <$> str
+  pure $ Secret <$> mToken <*> mOrcidId <*> mOrcidSecret <*> mSql
 
 --------------------------------------------------------------------------------
 -- Context
@@ -87,22 +93,26 @@ data Context = Context
   { context_port :: Int
   , context_path :: FilePath
   , context_auth :: Auth.Config
+  , context_sql :: SQL.Context
   } deriving (Show, Eq, Generic)
     deriving (FromJSON, ToJSON) via JSON Context
 
 activate :: Config -> Secret -> IO Context
-activate config secret = pure Context
-  { context_port = config_port config
-  , context_path = config_path config
-  , context_auth = Auth.Config
-      { Auth.config_orcid = ORCID.Config
-          { ORCID.config_id = secret_orcidId secret
-          , ORCID.config_secret = secret_orcidSecret secret
-          , ORCID.config_endpoint = config_orcidEndpoint config
-          }
-      , Auth.config_admin = Admin.Token
-          { Admin.token_value =
-              Text.Encoding.encodeUtf8 (secret_token secret)
-          }
-      }
-  }
+activate config secret = do
+  sql <- SQL.activate (config_sql config) (secret_sql secret)
+  pure Context
+    { context_port = config_port config
+    , context_path = config_path config
+    , context_auth = Auth.Config
+        { Auth.config_orcid = ORCID.Config
+            { ORCID.config_id = secret_orcidId secret
+            , ORCID.config_secret = secret_orcidSecret secret
+            , ORCID.config_endpoint = config_orcidEndpoint config
+            }
+        , Auth.config_admin = Admin.Token
+            { Admin.token_value =
+                Text.Encoding.encodeUtf8 (secret_token secret)
+            }
+        }
+    , context_sql = sql
+    }
