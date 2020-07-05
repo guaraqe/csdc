@@ -10,9 +10,7 @@ import Json.Decode as D
 type alias Response a = Result Http.Error a
 
 baseUrl : String
-baseUrl = "http://localhost:8080/api/"
---baseUrl = "http://csdc-dao-test.herokuapp.com/api/"
-
+baseUrl = "/api/"
 
 decodeNull : D.Decoder ()
 decodeNull =
