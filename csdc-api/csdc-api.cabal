@@ -25,6 +25,8 @@ common dependencies
     base,
     bytestring,
     ghc-prim,
+    hasql,
+    mtl,
     servant,
     servant-server,
     text,
@@ -51,6 +53,7 @@ library
     CSDC.Config
     CSDC.API
     CSDC.API.DAO
+    CSDC.SQL
   hs-source-dirs:
     src
   ghc-options:
