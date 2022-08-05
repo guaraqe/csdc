@@ -88,6 +88,7 @@ data FileDB = FileDB
   , fileDB_name :: Text
   , fileDB_size :: Int
   , fileDB_hash :: ByteString
+  , fileDB_ipfs :: Maybe Text
   , fileDB_modifiedAt :: POSIXTime
   } deriving (Show, Eq)
 
@@ -96,6 +97,7 @@ data FileUI = FileUI
   { fileUI_path :: Text
   , fileUI_name :: Text
   , fileUI_size :: Int
+  , fileUI_ipfs :: Maybe Text
   , fileUI_modifiedAt :: POSIXTime
   } deriving (Show, Eq, Generic)
     deriving (FromJSON, ToJSON) via JSON FileUI

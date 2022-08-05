@@ -5,6 +5,7 @@ module CSDC.SQL.Files
   ( selectFile
   , selectFileContents
   , upsertFile
+  , updateFileIPFS
   , selectFolderFiles
   , selectFolderSubfolders
   ) where
@@ -29,7 +30,7 @@ selectFile :: Statement (Text,Text) (Maybe FileDB)
 selectFile = Statement sql encoder decoder True
   where
     sql = ByteString.unlines
-      [ "SELECT folder, name, size, hash, modified_at"
+      [ "SELECT folder, name, size, hash, ipfs, modified_at"
       , "FROM files"
       , "WHERE folder = $1 AND name = $2"
       ]
@@ -43,6 +44,7 @@ selectFile = Statement sql encoder decoder True
       fileDB_name <- Decoder.text
       fileDB_size <- Decoder.int
       fileDB_hash <- Decoder.bytea
+      fileDB_ipfs <- Decoder.textNullable
       fileDB_modifiedAt <- Decoder.posixTime
       pure FileDB {..}
 
@@ -78,6 +80,19 @@ upsertFile = Statement sql encoder Decoders.noResult True
       contramap newFileDB_size Encoder.int <>
       contramap newFileDB_hash Encoder.bytea
 
+updateFileIPFS :: Statement (ByteString, Text) ()
+updateFileIPFS = Statement sql encoder Decoders.noResult True
+  where
+    sql = ByteString.unlines
+      [ "UPDATE files "
+      , "SET ipfs = $2"
+      , "WHERE hash = $1"
+      ]
+
+    encoder =
+      contramap fst Encoder.bytea <>
+      contramap snd Encoder.text
+
 --------------------------------------------------------------------------------
 -- Folders
 
@@ -85,7 +100,7 @@ selectFolderFiles :: Statement Text [FileDB]
 selectFolderFiles = Statement sql encoder decoder True
   where
     sql = ByteString.unlines
-      [ "SELECT folder, name, size, hash, modified_at"
+      [ "SELECT folder, name, size, hash, ipfs, modified_at"
       , "FROM files"
       , "WHERE folder = $1"
       , "ORDER BY name"
@@ -98,6 +113,7 @@ selectFolderFiles = Statement sql encoder decoder True
       fileDB_name <- Decoder.text
       fileDB_size <- Decoder.int
       fileDB_hash <- Decoder.bytea
+      fileDB_ipfs <- Decoder.textNullable
       fileDB_modifiedAt <- Decoder.posixTime
       pure FileDB {..}
 

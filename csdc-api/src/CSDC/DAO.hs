@@ -8,6 +8,7 @@ import CSDC.Image
 import CSDC.Prelude
 import CSDC.Types.File
 
+import qualified CSDC.IPFS as IPFS
 import qualified CSDC.Mail as Mail
 import qualified CSDC.Mail.Templates as Mail.Templates
 import qualified CSDC.SQL.Files as SQL.Files
@@ -23,11 +24,13 @@ import qualified CSDC.SQL.Units as SQL.Units
 
 import Control.Monad (forM_)
 import Control.Monad.Reader (asks)
+import Data.ByteString (ByteString)
 import Data.Password.Bcrypt (mkPassword, hashPassword)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import System.FilePath
 
 import qualified Data.Text as Text
+import qualified UnliftIO.Async
 
 --------------------------------------------------------------------------------
 -- User
@@ -388,6 +391,7 @@ insertUnitFile :: Id Unit -> File -> Action user ()
 insertUnitFile i file = do
   let fileFolder = "unit" <> "/" <> Text.pack (show i)
   filedb <- toNewFileDB fileFolder file
+  _ <- UnliftIO.Async.async $ saveFileIPFS (newFileDB_hash filedb) file
   runQuery SQL.Files.upsertFile filedb
 
 getUnitFiles :: Id Unit -> Action user [FileUI]
@@ -398,9 +402,15 @@ getUnitFiles i = do
         { fileUI_path = fileDB_folder <> "/" <> fileDB_name
         , fileUI_name = fileDB_name
         , fileUI_size = fileDB_size
+        , fileUI_ipfs = fileDB_ipfs
         , fileUI_modifiedAt = fileDB_modifiedAt
         }
   pure $ fmap toFileUI filesDB
+
+saveFileIPFS :: ByteString -> File -> Action user ()
+saveFileIPFS hash (File name contents) = do
+  IPFS.CID cid <- runIPFS $ IPFS.add name contents
+  runQuery SQL.Files.updateFileIPFS (hash, cid)
 
 --------------------------------------------------------------------------------
 -- Forum
