@@ -614,15 +614,17 @@ type alias FileUI =
   { path : FilePath
   , name : String
   , size : Int
+  , ipfs : Maybe String
   , modifiedAt : Posix
   }
 
 decodeFileUI : Decoder FileUI
 decodeFileUI =
-  Decoder.map4 FileUI
+  Decoder.map5 FileUI
     (Decoder.field "path" decodeFilePath)
     (Decoder.field "name" Decoder.string)
     (Decoder.field "size" Decoder.int)
+    (Decoder.field "ipfs" (Decoder.nullable Decoder.string))
     (Decoder.field "modifiedAt" decodePosix)
 
 --------------------------------------------------------------------------------

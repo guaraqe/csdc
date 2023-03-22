@@ -19,7 +19,25 @@ view file =
           [ Html.strong [] [ Html.text file.name ]
           ]
       , Html.br [] []
-      , Html.text <| "Size: " ++ String.fromInt file.size
+      , Html.div
+          [ Html.Attributes.style "width" "100%"
+          , Html.Attributes.style "display" "flex"
+          , Html.Attributes.style "justify-content" "space-between"
+          ]
+          [ Html.div [] [Html.text <| "Size: " ++ String.fromInt file.size]
+          , case file.ipfs of
+              Nothing -> Html.div [] []
+              Just ipfs ->
+                Html.div []
+                  [ Html.a
+                      [ Html.Attributes.href <| "https://ipfs.io/ipfs/" ++ ipfs
+                      , Html.Attributes.download file.name
+                      ]
+                      [ Html.strong [] [ Html.text "IPFS Link" ]
+                      ]
+                  ]
+          ]
+
       ]
   in
     BoxItem.view

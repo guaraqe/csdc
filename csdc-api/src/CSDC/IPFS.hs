@@ -18,7 +18,7 @@ import CSDC.Prelude
 import Control.Exception (throwIO)
 import Control.Monad.Reader
 import Data.Aeson (encode)
-import Data.ByteString.Lazy (ByteString)
+import Data.ByteString (ByteString)
 import Network.IPFS (MonadLocalIPFS (..))
 import Network.IPFS.Add (addFile)
 import Network.IPFS.CID.Types (CID (..))
@@ -28,6 +28,7 @@ import System.Process.Typed
 import System.Exit
 
 import qualified Data.ByteString.Lazy as Lazy
+import qualified Data.Text as Text
 
 --------------------------------------------------------------------------------
 -- Config
@@ -76,11 +77,11 @@ instance MonadLocalIPFS Action where
         | otherwise ->
           return . Left $ UnknownErr stdErr
 
-add :: FilePath -> ByteString -> Action CID
+add :: Text -> ByteString -> Action CID
 add path bs =
-  addFile bs (Name path) >>= \case
+  addFile (Lazy.fromStrict bs) (Name (Text.unpack path)) >>= \case
     Left e -> liftIO $ throwIO e
     Right (_,a) -> pure a
 
-addJSON :: ToJSON a => FilePath -> a -> Action CID
-addJSON path a = add path (encode a)
+addJSON :: ToJSON a => Text -> a -> Action CID
+addJSON path a = add path $ Lazy.toStrict $ encode a
