@@ -740,6 +740,118 @@ encodeElectionType s =
   case s of
     MajorityConsensus -> Encoder.string "Seen"
     SimpleMajority -> Encoder.string "NotSeen"
+    
+    
+    
+ --------------------------------------------ElectionType------------------------------------
+
+-- Election
+
+type ElectionType
+    = MajorityConsensus
+    | SimpleMajority
+
+
+type alias ElectionChoice =
+    { getElectionChoice : String }
+
+
+type alias Election =
+    { id : Id Election
+    , unitId : Id Unit
+    , title : String
+    , description : String
+    , choices : List ElectionChoice
+    , electionType : ElectionType
+    , visibleVotes : Bool
+    , endingAt : Posix
+    , result : Maybe ElectionChoice
+    , resultComputedAt : Maybe Posix
+    }
+    
+    
+    ----------------------------------------ElectionChoice---------------------------------
+
+type alias ElectionChoice = ElectionChoice String
+
+
+
+--------------------------------------------NewElection------------------------------------
+-- New Election
+
+type alias NewElection =
+    { unitId : Id Unit
+    , title : String
+    , description : String
+    , choices : List ElectionChoice
+    , electionType : ElectionType
+    , visibleVotes : Bool
+    , endingAt : Posix
+    }
+
+
+-- JSON encoders and decoders
+
+encoder : ElectionChoice -> Encode.Value
+encoder choice =
+    Encode.object [ ( "electionChoice", Encode.string choice.getElectionChoice ) ]
+
+decoder : Decode.Decoder ElectionChoice
+decoder =
+    Decode.map ElectionChoice <| Decode.field "electionChoice" Decode.string   
+    
+    
+    
+---------------------------------------Election-----------------------------------------
+
+type alias Election =
+    { id : Id Election
+    , unitId : Id Unit
+    , title : String
+    , description : String
+    , choices : List ElectionChoice
+    , electionType : ElectionType
+    , visibleVotes : Bool
+    , endingAt : Posix
+    , result : Maybe ElectionChoice
+    , resultComputedAt : Maybe Posix
+    }
+
+type alias ElectionChoice = ElectionChoice String
+
+type ElectionType
+    = MajorityConsensus
+    | SimpleMajority
+
+electionTypeDecoder : Decoder ElectionType
+electionTypeDecoder =
+    Json.Decode.oneOf
+        [ Json.Decode.map MajorityConsensus (Json.Decode.field "majorityConsensus")
+        , Json.Decode.map SimpleMajority (Json.Decode.field "simpleMajority")
+        ]
+
+electionTypeEncoder : ElectionType -> Value
+electionTypeEncoder electionType =
+    case electionType of
+        MajorityConsensus ->
+            Json.Encode.object [ ( "majorityConsensus", Json.Encode.null ) ]
+
+        SimpleMajority ->
+            Json.Encode.object [ ( "simpleMajority", Json.Encode.null ) ]
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 --------------------------------------------------------------------------------
 -- Helpers
