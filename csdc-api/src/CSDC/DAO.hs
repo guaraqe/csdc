@@ -10,6 +10,7 @@ import CSDC.Mail.Templates qualified as Mail.Templates
 import CSDC.Prelude
 import CSDC.SQL.Files qualified as SQL.Files
 import CSDC.SQL.Forum qualified as SQL.Forum
+import CSDC.SQL.Elections qualified as SQL.Elections
 import CSDC.SQL.Mail qualified as SQL.Mail
 import CSDC.SQL.MailInvitations qualified as SQL.MailInvitations
 import CSDC.SQL.Members qualified as SQL.Members
@@ -18,6 +19,7 @@ import CSDC.SQL.MessageSubparts qualified as SQL.MessageSubparts
 import CSDC.SQL.Persons qualified as SQL.Persons
 import CSDC.SQL.Subparts qualified as SQL.Subparts
 import CSDC.SQL.Units qualified as SQL.Units
+import CSDC.Types.Election
 import CSDC.Types.File
 import Control.Monad (forM_)
 import Control.Monad.Reader (asks)
@@ -441,6 +443,28 @@ createPost tid NewPost {..} = do
 
 getPosts :: Id Thread -> ActionAuth [PostInfo]
 getPosts tid = runQuery SQL.Forum.selectPosts tid
+
+--------------------------------------------------------------------------------
+-- Elections
+
+createElection :: Id Unit -> NewElection -> ActionAuth (Id Election)
+createElection unitId newElection = do
+  runQuery SQL.Elections.insertElection (unitId, newElection)
+
+getElections :: Id Unit -> ActionAuth [ElectionInfo]
+getElections unitId = do
+  personId <- getUser
+  runQuery SQL.Elections.selectElections (unitId, personId)
+
+deleteElection :: Id Election -> ActionAuth ()
+deleteElection electionId = do
+  runQuery SQL.Elections.deleteElection electionId
+
+addVote :: Id Election -> NewVote -> ActionAuth (Id Vote)
+addVote electionId newVote = do
+  personId <- getUser
+  runQuery SQL.Elections.insertVoter (electionId, personId)
+  runQuery SQL.Elections.insertVote (electionId, newVote)
 
 --------------------------------------------------------------------------------
 -- Mail

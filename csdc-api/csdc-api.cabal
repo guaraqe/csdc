@@ -101,6 +101,7 @@ library
     CSDC.SQL
     CSDC.SQL.Decoder
     CSDC.SQL.Encoder
+    CSDC.SQL.Elections
     CSDC.SQL.Forum
     CSDC.SQL.Members
     CSDC.SQL.MessageMembers

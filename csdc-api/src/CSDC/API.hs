@@ -17,20 +17,24 @@ import CSDC.SQL qualified as SQL
 import Servant hiding (Server)
 import WaiAppStatic.Storage.Filesystem (defaultWebAppSettings)
 import WaiAppStatic.Types (StaticSettings (..), unsafeToPiece)
+import GHC.Generics (Generic)
 
 --------------------------------------------------------------------------------
 -- API
 
-type API =
-  Auth.API
-    :<|> "files" :> Raw
-    :<|> Raw
+data API mode = API
+  { authAPI :: mode :- NamedRoutes Auth.API
+  , filesAPI :: mode :- "files" :> Raw
+  , rawAPI :: mode :- Raw
+  }
+  deriving (Generic)
 
 serveAPI :: FilePath -> SQL.Context -> Auth.Settings -> Server API
-serveAPI path ctx settings =
-  Auth.serveAPI settings
-    :<|> serveSQLFileServer ctx
-    :<|> serveDirectoryWith (options path)
+serveAPI path ctx settings = API
+  { authAPI = Auth.serveAPI settings
+  , filesAPI = serveSQLFileServer ctx
+  , rawAPI = serveDirectoryWith (options path)
+  }
 
 options :: FilePath -> StaticSettings
 options path =

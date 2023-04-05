@@ -1,8 +1,10 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module CSDC.API.DAO
   ( API,
+    NamedAPI,
     serveAPI,
   )
 where
@@ -10,6 +12,7 @@ where
 import CSDC.Action
 import CSDC.DAO
 import CSDC.Prelude
+import CSDC.Types.Election (Election, ElectionInfo, NewElection, NewVote, Vote)
 import CSDC.Types.File (Base64File, File (..), FileUI)
 import Data.ByteString.Lazy qualified as Lazy
 import Servant hiding (Post)
@@ -30,62 +33,74 @@ type CaptureId a = Capture "id" (Id a)
 --------------------------------------------------------------------------------
 -- User API
 
-type UserAPI =
-  "info" :> GetJSON (Maybe PersonInfo)
-    :<|> "inbox" :> GetJSON Inbox
-    :<|> "units" :> GetJSON [WithId Unit]
+data UserAPI mode = UserAPI
+  { getUserInfo :: mode :- "info" :> GetJSON (Maybe PersonInfo),
+    getUserInbox :: mode :- "inbox" :> GetJSON Inbox,
+    getUnitsWhoseChairIsUser :: mode :- "units" :> GetJSON [WithId Unit]
+  }
+  deriving (Generic)
 
-serveUserAPI :: ServerAuth UserAPI
-serveUserAPI =
-  getUserInfo
-    :<|> getUserInbox
-    :<|> getUnitsWhoseChairIsUser
+userAPI :: ServerAuth UserAPI
+userAPI =
+  UserAPI
+    { getUserInfo,
+      getUserInbox,
+      getUnitsWhoseChairIsUser
+    }
 
 --------------------------------------------------------------------------------
 -- Person API
 
-type PersonAPI =
-  CaptureId Person :> PostJSON PersonUpdate ()
-    :<|> CaptureId Person :> "image" :> PostJSON Base64File ()
-    :<|> CaptureId Person :> "info" :> GetJSON (Maybe PersonInfo)
+data PersonAPI mode = PersonAPI
+  { updatePerson :: mode :- CaptureId Person :> PostJSON PersonUpdate (),
+    updatePersonImage :: mode :- CaptureId Person :> "image" :> PostJSON Base64File (),
+    getPersonInfo :: mode :- CaptureId Person :> "info" :> GetJSON (Maybe PersonInfo)
+  }
+  deriving (Generic)
 
-servePersonAPI :: ServerAuth PersonAPI
-servePersonAPI =
-  updatePerson
-    :<|> updatePersonImage
-    :<|> getPersonInfo
+personAPI :: ServerAuth PersonAPI
+personAPI =
+  PersonAPI
+    { updatePerson,
+      updatePersonImage,
+      getPersonInfo
+    }
 
 --------------------------------------------------------------------------------
 -- Unit API
 
-type UnitAPI =
-  PostJSON NewUnit (Id Unit)
-    :<|> CaptureId Unit :> GetJSON (Maybe Unit)
-    :<|> CaptureId Unit :> PostJSON UnitUpdate ()
-    :<|> CaptureId Unit :> DeleteJSON ()
-    :<|> CaptureId Unit :> "image" :> PostJSON Base64File ()
-    :<|> CaptureId Unit :> "info" :> GetJSON (Maybe UnitInfo)
-    :<|> CaptureId Unit :> "children" :> GetJSON [UnitSubpart]
-    :<|> CaptureId Unit :> "parents" :> GetJSON [UnitSubpart]
-    :<|> CaptureId Unit :> "chair" :> PostJSON (Id Person) ()
-    :<|> CaptureId Unit :> "files" :> GetJSON [FileUI]
-    :<|> CaptureId Unit :> "files" :> MultipartForm Mem File :> Servant.Post '[JSON] ()
-    :<|> CaptureId Unit :> "invitation" :> PostJSON MailInvitation ()
+data UnitAPI mode = UnitAPI
+  { createUnit :: mode :- PostJSON NewUnit (Id Unit),
+    selectUnit :: mode :- CaptureId Unit :> GetJSON (Maybe Unit),
+    updateUnit :: mode :- CaptureId Unit :> PostJSON UnitUpdate (),
+    deleteUnit :: mode :- CaptureId Unit :> DeleteJSON (),
+    updateUnitImage :: mode :- CaptureId Unit :> "image" :> PostJSON Base64File (),
+    getUnitInfo :: mode :- CaptureId Unit :> "info" :> GetJSON (Maybe UnitInfo),
+    getUnitChildren :: mode :- CaptureId Unit :> "children" :> GetJSON [UnitSubpart],
+    getUnitParents :: mode :- CaptureId Unit :> "parents" :> GetJSON [UnitSubpart],
+    changeUnitChair :: mode :- CaptureId Unit :> "chair" :> PostJSON (Id Person) (),
+    getUnitFiles :: mode :- CaptureId Unit :> "files" :> GetJSON [FileUI],
+    insertUnitFile :: mode :- CaptureId Unit :> "files" :> MultipartForm Mem File :> Servant.Post '[JSON] (),
+    sendMailInvitation :: mode :- CaptureId Unit :> "invitation" :> PostJSON MailInvitation ()
+  }
+  deriving (Generic)
 
-serveUnitAPI :: ServerAuth UnitAPI
-serveUnitAPI =
-  createUnit
-    :<|> selectUnit
-    :<|> updateUnit
-    :<|> deleteUnit
-    :<|> updateUnitImage
-    :<|> getUnitInfo
-    :<|> getUnitChildren
-    :<|> getUnitParents
-    :<|> changeUnitChair
-    :<|> getUnitFiles
-    :<|> insertUnitFile
-    :<|> sendMailInvitation
+unitAPI :: ServerAuth UnitAPI
+unitAPI =
+  UnitAPI
+    { createUnit,
+      selectUnit,
+      updateUnit,
+      deleteUnit,
+      updateUnitImage,
+      getUnitInfo,
+      getUnitChildren,
+      getUnitParents,
+      changeUnitChair,
+      getUnitFiles,
+      insertUnitFile,
+      sendMailInvitation
+    }
 
 instance FromMultipart Mem File where
   fromMultipart parts = do
@@ -97,113 +112,173 @@ instance FromMultipart Mem File where
         }
 
 --------------------------------------------------------------------------------
+-- Elections
+
+data ElectionAPI mode = ElectionAPI
+  { -- POST election/unit/<unit-uuid>/
+    createElection :: mode :- "unit" :> CaptureId Unit :> PostJSON NewElection (Id Election),
+    -- GET election/unit/<unit-uuid>/
+    getElections :: mode :- "unit" :> CaptureId Unit :> GetJSON [ElectionInfo],
+    -- DELETE election/<election-id>
+    deleteElection :: mode :- CaptureId Election :> DeleteJSON (),
+    -- POST election/<election-id>/vote
+    addVote :: mode :- CaptureId Election :> "vote" :> PostJSON NewVote (Id Vote)
+  }
+  deriving (Generic)
+
+electionAPI :: ServerAuth ElectionAPI
+electionAPI =
+  ElectionAPI
+    { createElection,
+      getElections,
+      deleteElection,
+      addVote
+    }
+
+--------------------------------------------------------------------------------
 -- Member API
 
-type MemberAPI =
-  PostJSON NewMember (Id Member)
-    :<|> CaptureId Member :> DeleteJSON ()
+data MemberAPI mode = MemberAPI
+  { insertMember :: mode :- PostJSON NewMember (Id Member),
+    deleteMember :: mode :- CaptureId Member :> DeleteJSON ()
+  }
+  deriving (Generic)
 
-serveMemberAPI :: ServerAuth MemberAPI
-serveMemberAPI =
-  insertMember
-    :<|> deleteMember
+memberAPI :: ServerAuth MemberAPI
+memberAPI =
+  MemberAPI
+    { insertMember,
+      deleteMember
+    }
 
 --------------------------------------------------------------------------------
 -- Subpart API
 
-type SubpartAPI =
-  PostJSON NewSubpart (Id Subpart)
-    :<|> CaptureId Subpart :> DeleteJSON ()
+data SubpartAPI mode = SubpartAPI
+  { insertSubpart :: mode :- PostJSON NewSubpart (Id Subpart),
+    deleteSubpart :: mode :- CaptureId Subpart :> DeleteJSON ()
+  }
+  deriving (Generic)
 
-serveSubpartAPI :: ServerAuth SubpartAPI
-serveSubpartAPI =
-  insertSubpart
-    :<|> deleteSubpart
+subpartAPI :: ServerAuth SubpartAPI
+subpartAPI =
+  SubpartAPI
+    { insertSubpart,
+      deleteSubpart
+    }
 
 --------------------------------------------------------------------------------
 -- Message API
 
-type MessageMemberAPI =
-  "send" :> PostJSON (NewMessage NewMember) (Id (Message NewMember))
-    :<|> "reply" :> PostJSON (NewReply NewMember) (Id (Reply NewMember))
-    :<|> "view" :> PostJSON (Id (Reply NewMember)) ()
+data MessageMemberAPI mode = MessageMemberAPI
+  { sendMessageMember :: mode :- "send" :> PostJSON (NewMessage NewMember) (Id (Message NewMember)),
+    sendReplyMember :: mode :- "reply" :> PostJSON (NewReply NewMember) (Id (Reply NewMember)),
+    viewReplyMember :: mode :- "view" :> PostJSON (Id (Reply NewMember)) ()
+  }
+  deriving (Generic)
 
-serveMessageMemberAPI :: ServerAuth MessageMemberAPI
-serveMessageMemberAPI =
-  sendMessageMember
-    :<|> sendReplyMember
-    :<|> viewReplyMember
+messageMemberAPI :: ServerAuth MessageMemberAPI
+messageMemberAPI =
+  MessageMemberAPI
+    { sendMessageMember,
+      sendReplyMember,
+      viewReplyMember
+    }
 
-type MessageSubpartAPI =
-  "send" :> PostJSON (NewMessage NewSubpart) (Id (Message NewSubpart))
-    :<|> "reply" :> PostJSON (NewReply NewSubpart) (Id (Reply NewSubpart))
-    :<|> "view" :> PostJSON (Id (Reply NewSubpart)) ()
+data MessageSubpartAPI mode = MessageSubpartAPI
+  { sendMessageSubpart :: mode :- "send" :> PostJSON (NewMessage NewSubpart) (Id (Message NewSubpart)),
+    sendReplySubpart :: mode :- "reply" :> PostJSON (NewReply NewSubpart) (Id (Reply NewSubpart)),
+    viewReplySubpart :: mode :- "view" :> PostJSON (Id (Reply NewSubpart)) ()
+  }
+  deriving (Generic)
 
-serveMessageSubpartAPI :: ServerAuth MessageSubpartAPI
-serveMessageSubpartAPI =
-  sendMessageSubpart
-    :<|> sendReplySubpart
-    :<|> viewReplySubpart
+messageSubpartAPI :: ServerAuth MessageSubpartAPI
+messageSubpartAPI =
+  MessageSubpartAPI
+    { sendMessageSubpart,
+      sendReplySubpart,
+      viewReplySubpart
+    }
 
-type MessageAPI =
-  "member" :> MessageMemberAPI
-    :<|> "subpart" :> MessageSubpartAPI
-    :<|> "inbox" :> "unit" :> CaptureId Unit :> GetJSON Inbox
+data MessageAPI mode = MessageAPI
+  { messageMemberAPI :: mode :- "member" :> NamedRoutes MessageMemberAPI,
+    messageSubpartAPI :: mode :- "subpart" :> NamedRoutes MessageSubpartAPI,
+    getUnitInbox :: mode :- "inbox" :> "unit" :> CaptureId Unit :> GetJSON Inbox
+  }
+  deriving (Generic)
 
-serveMessageAPI :: ServerAuth MessageAPI
-serveMessageAPI =
-  serveMessageMemberAPI
-    :<|> serveMessageSubpartAPI
-    :<|> getUnitInbox
+messageAPI :: ServerAuth MessageAPI
+messageAPI =
+  MessageAPI
+    { messageMemberAPI,
+      messageSubpartAPI,
+      getUnitInbox
+    }
 
 --------------------------------------------------------------------------------
 -- Search
 
-type SearchAPI =
-  "units" :> Capture "query" Text :> GetJSON [WithId Unit]
-    :<|> "all" :> Capture "query" Text :> GetJSON [SearchResult SearchId]
+data SearchAPI mode = SearchAPI
+  { searchUnits :: mode :- "units" :> Capture "query" Text :> GetJSON [WithId Unit],
+    searchAll :: mode :- "all" :> Capture "query" Text :> GetJSON [SearchResult SearchId]
+  }
+  deriving (Generic)
 
-serveSearchAPI :: ServerAuth SearchAPI
-serveSearchAPI =
-  searchUnits
-    :<|> searchAll
+searchAPI :: ServerAuth (SearchAPI)
+searchAPI =
+  SearchAPI
+    { searchUnits,
+      searchAll
+    }
 
 --------------------------------------------------------------------------------
 -- Forum
 
-type ForumAPI =
-  "unit" :> CaptureId Unit :> PostJSON NewThread (Id Thread)
-    :<|> "unit" :> CaptureId Unit :> GetJSON [ThreadInfo]
-    :<|> "thread" :> CaptureId Thread :> PostJSON NewPost (Id Post)
-    :<|> "thread" :> CaptureId Thread :> GetJSON [PostInfo]
+data ForumAPI mode = ForumAPI
+  { createThread :: mode :- "unit" :> CaptureId Unit :> PostJSON NewThread (Id Thread),
+    getThreads :: mode :- "unit" :> CaptureId Unit :> GetJSON [ThreadInfo],
+    createPost :: mode :- "thread" :> CaptureId Thread :> PostJSON NewPost (Id Post),
+    getPosts :: mode :- "thread" :> CaptureId Thread :> GetJSON [PostInfo]
+  }
+  deriving (Generic)
 
-serveForumAPI :: ServerAuth ForumAPI
-serveForumAPI =
-  createThread
-    :<|> getThreads
-    :<|> createPost
-    :<|> getPosts
+forumAPI :: ServerAuth ForumAPI
+forumAPI =
+  ForumAPI
+    { createThread,
+      getThreads,
+      createPost,
+      getPosts
+    }
 
 --------------------------------------------------------------------------------
 -- API
 
-type API =
-  "user" :> UserAPI
-    :<|> "person" :> PersonAPI
-    :<|> "unit" :> UnitAPI
-    :<|> "member" :> MemberAPI
-    :<|> "subpart" :> SubpartAPI
-    :<|> "message" :> MessageAPI
-    :<|> "search" :> SearchAPI
-    :<|> "forum" :> ForumAPI
+type API = NamedRoutes NamedAPI
 
-serveAPI :: ServerAuth API
+data NamedAPI mode = NamedAPI
+  { userAPI :: mode :- "user" :> NamedRoutes UserAPI,
+    personAPI :: mode :- "person" :> NamedRoutes PersonAPI,
+    unitAPI :: mode :- "unit" :> NamedRoutes UnitAPI,
+    memberAPI :: mode :- "member" :> NamedRoutes MemberAPI,
+    subpartAPI :: mode :- "subpart" :> NamedRoutes SubpartAPI,
+    messageAPI :: mode :- "message" :> NamedRoutes MessageAPI,
+    searchAPI :: mode :- "search" :> NamedRoutes SearchAPI,
+    forumAPI :: mode :- "forum" :> NamedRoutes ForumAPI,
+    electionAPI :: mode :- "election" :> NamedRoutes ElectionAPI
+  }
+  deriving (Generic)
+
+serveAPI :: ServerAuth NamedAPI
 serveAPI =
-  serveUserAPI
-    :<|> servePersonAPI
-    :<|> serveUnitAPI
-    :<|> serveMemberAPI
-    :<|> serveSubpartAPI
-    :<|> serveMessageAPI
-    :<|> serveSearchAPI
-    :<|> serveForumAPI
+  NamedAPI
+    { userAPI,
+      personAPI,
+      unitAPI,
+      memberAPI,
+      subpartAPI,
+      messageAPI,
+      searchAPI,
+      forumAPI,
+      electionAPI
+    }

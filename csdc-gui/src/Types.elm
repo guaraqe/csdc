@@ -720,6 +720,28 @@ encodeMailInvitation mailInvitation =
     ]
 
 --------------------------------------------------------------------------------
+-- New Vote
+
+type ElectionType = MajorityConsensus | SimpleMajority
+
+decodeElectionType : Decoder ElectionType
+decodeElectionType =
+  decodeString <| \s ->
+    case s of
+      "MajorityConsensus" ->
+        Decoder.succeed MajorityConsensus
+      "SimpleMajority" ->
+        Decoder.succeed SimpleMajority
+      _ ->
+        Decoder.fail <| "Invalid ElectionType: " ++ s
+
+encodeElectionType : ElectionType -> Value
+encodeElectionType s =
+  case s of
+    MajorityConsensus -> Encoder.string "Seen"
+    SimpleMajority -> Encoder.string "NotSeen"
+
+--------------------------------------------------------------------------------
 -- Helpers
 
 decodeString : (String -> Decoder a) -> Decoder a

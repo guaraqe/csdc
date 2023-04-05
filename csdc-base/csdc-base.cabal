@@ -22,6 +22,7 @@ library
     CSDC.Prelude
     CSDC.SQL.QQ
     CSDC.Types.Id
+    CSDC.Types.Election
     CSDC.Types.File
     CSDC.Types.Forum
     CSDC.Types.GUI
@@ -33,6 +34,7 @@ library
     base,
     containers,
     cryptohash-md5,
+    hashable,
     http-api-data,
     lens,
     password,
@@ -40,6 +42,7 @@ library
     template-haskell,
     text,
     time,
+    unordered-containers,
     uuid
   hs-source-dirs:
     src

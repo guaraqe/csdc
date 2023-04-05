@@ -1,5 +1,10 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module CSDC.API.Auth
   ( API,
@@ -18,7 +23,22 @@ import CSDC.Prelude hiding (Post)
 import CSDC.SQL.Persons qualified as SQL.Persons
 import Data.Password.Bcrypt (PasswordCheck (..), checkPassword, mkPassword)
 import Servant hiding (Server, Unauthorized, throwError)
+import Servant.Server.Generic (AsServerT)
 import Servant.Auth.Server
+  ( Auth,
+    AuthResult (..),
+    Cookie,
+    CookieSettings (..),
+    FromJWT,
+    JWTSettings,
+    SetCookie,
+    ToJWT,
+    acceptLogin,
+    clearSession,
+    defaultCookieSettings,
+    defaultJWTSettings,
+    generateKey,
+  )
 
 --------------------------------------------------------------------------------
 -- User
@@ -47,11 +67,15 @@ instance FromJSON Login
 type CookieHeaders =
   Headers '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie]
 
-type SigninAPI =
-  ReqBody '[JSON] Login :> Verb 'POST 204 '[JSON] (CookieHeaders NoContent)
+data SigninAPI mode = SigninAPI
+  { signin :: mode :- ReqBody '[JSON] Login :> Verb 'POST 204 '[JSON] (CookieHeaders NoContent)
+  }
+  deriving (Generic)
 
 serveSigninAPI :: Settings -> Server SigninAPI
-serveSigninAPI settings = authenticate settings
+serveSigninAPI settings = SigninAPI
+  { signin = authenticate settings
+  }
 
 authenticate :: Settings -> Login -> Action () (CookieHeaders NoContent)
 authenticate (Settings cookieSettings jwtSettings) (Login email password) =
@@ -73,38 +97,44 @@ authenticate (Settings cookieSettings jwtSettings) (Login email password) =
 --------------------------------------------------------------------------------
 -- Signup API
 
-type SignupAPI =
-  ReqBody '[JSON] NewUser :> Post '[JSON] (Id Person)
+data SignupAPI mode = SignupAPI
+  { signup :: mode :- ReqBody '[JSON] NewUser :> Post '[JSON] (Id Person)
+  }
+  deriving (Generic)
 
 serveSignupAPI :: Server SignupAPI
-serveSignupAPI = createUser
+serveSignupAPI = SignupAPI
+  { signup = createUser
+  }
 
 --------------------------------------------------------------------------------
 -- Signout API
 
-type SignoutAPI =
-  Get '[JSON] (CookieHeaders Text)
+data SignoutAPI mode = SignoutAPI
+  { signout :: mode :- Get '[JSON] (CookieHeaders Text)
+  }
+  deriving (Generic)
 
-serveSignoutAPI :: Monad m => Settings -> ServerT SignoutAPI m
-serveSignoutAPI (Settings {..}) =
-  return $
-    clearSession settingsCookie ""
+serveSignoutAPI :: Monad m => Settings -> SignoutAPI (AsServerT m)
+serveSignoutAPI (Settings {..}) = SignoutAPI
+  { signout = return $ clearSession settingsCookie ""
+  }
 
 --------------------------------------------------------------------------------
 -- API with auth
 
-type AuthAPI = Auth '[Cookie] User :> DAO.API
-
-serveAuthAPI :: AuthResult User -> Server DAO.API
+serveAuthAPI :: AuthResult User -> Server DAO.NamedAPI
 serveAuthAPI (Authenticated (User personId)) =
   hoistServer (Proxy @DAO.API) (withPerson personId) DAO.serveAPI
 serveAuthAPI _ = throwUnauthorized
 
-type API =
-  "api" :> AuthAPI
-    :<|> "signin" :> SigninAPI
-    :<|> "signup" :> SignupAPI
-    :<|> "signout" :> SignoutAPI
+data API mode = API
+  { daoAPI :: mode :- "api" :> Auth '[Cookie] User :> DAO.API
+  , signinAPI :: mode :- "signin" :> NamedRoutes SigninAPI
+  , signupAPI :: mode :- "signup" :> NamedRoutes SignupAPI
+  , signoutAPI :: mode :- "signout" :> NamedRoutes SignoutAPI
+  }
+  deriving (Generic)
 
 data Settings = Settings
   { settingsCookie :: CookieSettings,
@@ -121,11 +151,12 @@ makeSettings = do
       }
 
 serveAPI :: Settings -> Server API
-serveAPI settings =
-  serveAuthAPI
-    :<|> serveSigninAPI settings
-    :<|> serveSignupAPI
-    :<|> serveSignoutAPI settings
+serveAPI settings = API
+  { daoAPI = serveAuthAPI
+  , signinAPI = serveSigninAPI settings
+  , signupAPI = serveSignupAPI
+  , signoutAPI = serveSignoutAPI settings
+  }
 
 contextProxy :: Proxy '[CookieSettings, JWTSettings]
 contextProxy = Proxy
@@ -155,3 +186,12 @@ instance
 
 instance {-# OVERLAPPABLE #-} ThrowUnauthorized (Action user a) where
   throwUnauthorized = throw Unauthorized
+
+instance
+  {-# OVERLAPPABLE #-}
+  ( ThrowUnauthorized (ToServant routes mode),
+    GenericServant routes mode
+  ) =>
+  ThrowUnauthorized (routes mode)
+  where
+  throwUnauthorized = fromServant throwUnauthorized

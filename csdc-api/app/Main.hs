@@ -3,7 +3,7 @@
 
 module Main where
 
-import CSDC.API (API, serveAPI)
+import CSDC.API (serveAPI)
 import CSDC.API.Auth qualified as Auth
 import CSDC.Action qualified as Action
 import CSDC.Config (Context (..), activate, readConfig, showConfig)
@@ -15,7 +15,8 @@ import Network.Wai.Handler.Warp (defaultSettings, runSettings, setLogger, setPor
 import Network.Wai.Logger (withStdoutLogger)
 import Network.Wai.Middleware.Cors qualified as Cors
 import Network.Wai.Middleware.Gzip (GzipFiles (..), def, gzip, gzipFiles)
-import Servant (Application, Proxy (..), hoistServerWithContext, serveWithContext)
+import Servant (Application)
+import Servant.Server.Generic (genericServeTWithContext)
 import System.Environment (getArgs)
 import System.IO
 
@@ -67,12 +68,11 @@ middleware =
    in compress . cors
 
 application :: FilePath -> Auth.Settings -> Action.Context () -> Application
-application path settings context = \request response -> do
-  let api = Proxy @API
-      sqlContext = context.sql
+application path settings context =
+  let sqlContext = context.sql
       cfg = Auth.makeContext settings
-      server = hoistServerWithContext api Auth.contextProxy (Action.run context) (serveAPI path sqlContext settings)
-  serveWithContext api cfg server request response
+  in
+    genericServeTWithContext (Action.run context) (serveAPI path sqlContext settings) cfg
 
 migrate :: Context -> IO ()
 migrate context = do

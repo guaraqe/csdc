@@ -44,7 +44,8 @@ import Control.Exception (Exception, try)
 import Control.Monad.Except (MonadError (..), throwError)
 import Control.Monad.Reader (MonadReader (..), ReaderT (..), asks)
 import Hasql.Statement (Statement)
-import Servant (ServerError, ServerT, err401, err500)
+import Servant (ServerError, err401, err500)
+import Servant.Server.Generic (AsServerT)
 import UnliftIO (MonadUnliftIO, throwIO)
 
 --------------------------------------------------------------------------------
@@ -81,9 +82,9 @@ throw err =
 --------------------------------------------------------------------------------
 -- Server
 
-type Server api = ServerT api (Action ())
+type Server api = api (AsServerT (Action ()))
 
-type ServerAuth api = ServerT api (Action (Id Person))
+type ServerAuth api = api (AsServerT (Action (Id Person)))
 
 --------------------------------------------------------------------------------
 -- Action
