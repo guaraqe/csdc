@@ -17,6 +17,7 @@ import CSDC.Types.Election
 import CSDC.SQL.Decoder qualified as Decoder
 import CSDC.SQL.Encoder qualified as Encoder
 import CSDC.SQL.QQ
+import Data.ByteString.Char8 qualified as ByteString
 import Data.Functor.Contravariant (Contravariant (..))
 import Hasql.Statement (Statement (..))
 
@@ -30,16 +31,18 @@ insertElection = Statement sql encoder decoder True
           "RETURNING id"
         ]
 
-    encoder = 
-      (contramap (.unit) Encoder.text)
-        <> (contramap (.title) Encoder.text)
-        <> (contramap (.description) Encoder.text)
-        <> (contramap (.choices) Encoder.text)
-        <> (contramap (.election_type) Encoder.text)
-        <> (contramap (.visible_votes) Encoder.text)
-        <> (contramap (.ending_at) Encoder.text)
-        <> (contramap (.result) Encoder.text)
-        <> (contramap (.result_computed_at) Encoder.text)
+    -- XXX: fields have to be written like in the type definition, see
+    -- Types.Election
+    encoder =
+      contramap (.unitId) Encoder.id
+        <> contramap (.title) Encoder.text
+        <> contramap (.description) Encoder.text
+        <> contramap (.choices) Encoder.text
+        <> contramap (.election_type) Encoder.text
+        <> contramap (.visible_votes) Encoder.text
+        <> contramap (.ending_at) Encoder.text
+        <> contramap (.result) Encoder.text
+        <> contramap (.result_computed_at) Encoder.text
 
     decoder = Decoder.singleRow Decoder.id
 
@@ -53,9 +56,11 @@ selectElections = Statement sql encoder decoder True
           "WHERE id = $1"
         ]
 
-    encoder = Encoder.id
+    encoder =
+      contramap fst Encoder.id <>
+      contramap snd Encoder.id
 
-    decoder = Decoder.rowMaybe $ do
+    decoder = Decoder.rowList $ do
       unit <- Decoder.text
       title <- Decoder.text
       description <- Decoder.text
@@ -65,7 +70,8 @@ selectElections = Statement sql encoder decoder True
       ending_at <- Decoder.posixTime
       result <- Decoder.text
       result_computed_at <- Decoder.posixTime
-      pure Election {..}
+      -- XXX: missing the info
+      pure ElectionInfo {..}
 
 deleteElection :: Statement (Id Election) ()
 deleteElection = Statement sql encoder decoder True
@@ -86,8 +92,7 @@ insertVoter = Statement sql encoder decoder True
     sql =
       ByteString.unlines
         [ "INSERT INTO voters (election, person, voted_at, vote)",
-          "VALUES ($1, $2, $3, $4)",
-          "RETURNING id"
+          "VALUES ($1, $2, $3, $4)"
         ]
 
     encoder =
@@ -96,7 +101,7 @@ insertVoter = Statement sql encoder decoder True
         <> (contramap (.voted_at) Encoder.text)
         <> (contramap (.voteId) Encoder.id)
 
-    decoder = Decoder.singleRow Decoder.id
+    decoder = Decoder.noResult
 
 insertVote :: Statement (Id Election, NewVote) (Id Vote)
 insertVote = Statement sql encoder decoder True
