@@ -4,6 +4,7 @@ module CSDC.SQL.Decoder
     bytea,
     int,
     posixTime,
+    posixTimeNullable,
     text,
     textNullable,
     textList,
@@ -14,6 +15,9 @@ module CSDC.SQL.Decoder
     messageStatus,
     replyType,
     replyStatus,
+    electionChoiceList,
+    electionChoiceNullable,
+    electionType,
 
     -- * Reexport
     Decoders.rowList,
@@ -24,6 +28,7 @@ module CSDC.SQL.Decoder
 where
 
 import CSDC.Prelude
+import CSDC.Types.Election
 import Data.ByteString (ByteString)
 import Data.Time.Clock.POSIX (POSIXTime, utcTimeToPOSIXSeconds)
 import Hasql.Decoders (Row, column, listArray, nonNullable, nullable)
@@ -46,6 +51,11 @@ posixTime :: Row POSIXTime
 posixTime =
   utcTimeToPOSIXSeconds
     <$> column (nonNullable Decoders.timestamptz)
+
+posixTimeNullable :: Row (Maybe POSIXTime)
+posixTimeNullable =
+  fmap utcTimeToPOSIXSeconds
+    <$> column (nullable Decoders.timestamptz)
 
 text :: Row Text
 text = column (nonNullable Decoders.text)
@@ -102,3 +112,12 @@ replyStatus = column (nonNullable (Decoders.enum decode))
         [ ("Seen", Seen),
           ("NotSeen", NotSeen)
         ]
+
+electionChoiceList :: Row [ElectionChoice]
+electionChoiceList = undefined
+
+electionChoiceNullable :: Row (Maybe ElectionChoice)
+electionChoiceNullable = undefined
+
+electionType :: Row ElectionType
+electionType = undefined
