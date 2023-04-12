@@ -7,6 +7,8 @@ import Http
 import Json.Decode as D
 import Url.Builder
 
+import Debug exposing (todo)
+
 --------------------------------------------------------------------------------
 -- Helpers
 
@@ -339,3 +341,23 @@ getThreadPosts uid =
     { url = baseUrl ++ "forum/thread/" ++ idToString uid
     , expect = Http.expectJson identity (D.list decodePostInfo)
     }
+
+--------------------------------------------------------------------------------
+-- Election
+
+-- POST election/unit/<unit-uuid>/
+createElection : Id Unit -> NewElection -> Cmd (Response (Id Election))
+createElection = todo "TBD"
+
+-- GET election/unit/<unit-uuid>/
+getElections : Id Unit -> Cmd (Response (List ElectionInfo))
+getElections = todo "TBD"
+
+-- DELETE election/<election-id>
+deleteElection : Id Election -> Cmd (Response ())
+deleteElection = todo "TBD"
+
+-- POST election/<election-id>/vote
+addVote : Id Election -> NewVote -> Cmd (Response (Id Vote))
+addVote = todo "TBD"
+

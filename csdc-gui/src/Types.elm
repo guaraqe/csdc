@@ -848,6 +848,12 @@ encodeVotePayload p =
           )
         ]
 
+-- This is needed for Id references
+type alias Vote =
+  { electionId : Id Election
+  , payload : VotePayload
+  }
+
 type Grade
   = GradeExcellent
   | GradeVeryGood
