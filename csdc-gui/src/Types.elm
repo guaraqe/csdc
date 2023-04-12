@@ -7,8 +7,6 @@ import Time exposing (Posix, Month (..))
 import UUID exposing (UUID)
 import Dict exposing (Dict)
 
-import Debug exposing (Debug)
-
 --------------------------------------------------------------------------------
 -- Login
 
@@ -770,7 +768,7 @@ decodeElection =
     |> andMap (Decoder.field "unitId" decodeId)
     |> andMap (Decoder.field "title" Decoder.string)
     |> andMap (Decoder.field "description" Decoder.string)
-    |> andMap (Decoder.field "choices" Decoder.list docodeElectionChoice)
+    |> andMap (Decoder.field "choices" (Decoder.list decodeElectionChoice))
     |> andMap (Decoder.field "electionType" decodeElectionType)
     |> andMap (Decoder.field "visibleVotes" Decoder.bool)
     |> andMap (Decoder.field "endingAt"  decodePosix)
@@ -808,8 +806,8 @@ encodeNewElection newElection =
     , ("description", Encoder.string newElection.description )
     , ( "choices", Encoder.list encodeElectionChoice newElection.choices )
     , ( "electionType", encodeElectionType  newElection.electionType )
-    , ( "visibleVotes", Encode.bool newElection.visibleVotes )
-    , ( "endingAt", Encode.int <| Time.posixToMillis newElection.endingAt )
+    , ( "visibleVotes", Encoder.bool newElection.visibleVotes )
+    , ( "endingAt", Encoder.int <| Time.posixToMillis newElection.endingAt )
     ]
 
 --------------------------------------------------------------------------------
@@ -821,9 +819,8 @@ type alias NewVote =
   }
 
 encodeNewVote : NewVote -> Value
-encodeNewVote newVote = 
-   Encode.object
-   
+encodeNewVote newVote =
+  Encoder.object
    [ ( "electionId", encodeId newVote.electionId )
    , ( "payload ", encodeVotePayload newVote.payload )
    ]
@@ -863,22 +860,17 @@ encodeGrade : Grade -> Value
 encodeGrade grade =
     case grade of
         GradeExcellent ->
-            string "excellent"
-
+            Encoder.string "GradeExcellent"
         GradeVeryGood ->
-            string "very_good"
-
+            Encoder.string "GradeVeryGood"
         GradeGood ->
-            string "good"
-
+            Encoder.string "GradeGood"
         GradeAcceptable ->
-            string "acceptable"
-
+            Encoder.string "GradeAcceptable"
         GradeBad ->
-            string "bad"
-
+            Encoder.string "GradeBad"
         GradeVeryBad ->
-            string "very_bad"
+            Encoder.string "GradeVeryBad"
 
 --------------------------------------------------------------------------------
 -- Helpers
