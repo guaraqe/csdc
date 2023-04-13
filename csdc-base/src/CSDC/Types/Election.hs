@@ -21,8 +21,7 @@ newtype ElectionChoice = ElectionChoice {getElectionChoice :: Text}
   deriving newtype (FromJSON, ToJSON, Hashable, FromJSONKey, ToJSONKey)
 
 data Election = Election
-  { id :: Id Election,
-    unitId :: Id Unit,
+  { unitId :: Id Unit,
     title :: Text,
     description :: Text,
     choices :: [ElectionChoice],
@@ -36,7 +35,8 @@ data Election = Election
   deriving anyclass (FromJSON, ToJSON)
 
 data ElectionInfo = ElectionInfo
-  { election :: Election,
+  { electionId :: Id Election,
+    election :: Election,
     votedAt :: Maybe UTCTime
   }
   deriving (Show, Eq, Generic)

@@ -339,3 +339,36 @@ getThreadPosts uid =
     { url = baseUrl ++ "forum/thread/" ++ idToString uid
     , expect = Http.expectJson identity (D.list decodePostInfo)
     }
+
+--------------------------------------------------------------------------------
+-- Election
+
+  -- POST election/unit/<unit-uuid>/
+createElection : Id Unit -> NewElection -> Cmd (Response (Id Election))
+createElection uid newElection =
+  Http.post
+    { url = baseUrl ++ "election/unit/" ++ idToString uid
+    , body = Http.jsonBody <| encodeNewElection newElection
+    , expect = Http.expectJson identity decodeId
+    }
+
+    -- GET election/unit/<unit-uuid>/
+getElections : Id Unit -> Cmd (Response (List ElectionInfo))
+getElections uid =
+  Http.get
+    { url = baseUrl ++ "election/unit/" ++ idToString uid
+    , expect = Http.expectJson identity (D.list decodeElectionInfo)
+    }
+
+-- DELETE election/<election-id>
+deleteElection : Id Election -> Cmd (Response ())
+deleteElection = delete "election" identity
+
+ -- POST election/<election-id>/vote
+addVote : Id Election -> NewVote -> Cmd (Response (Id Vote))
+addVote  uid newVote =
+  Http.post
+    { url = baseUrl ++ "vote/unit/" ++ idToString uid
+    , body = Http.jsonBody <| encodeNewVote newVote
+    , expect = Http.expectJson identity decodeId
+    }

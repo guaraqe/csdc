@@ -5,6 +5,7 @@ import Json.Encode as Encoder exposing (Value)
 import String
 import Time exposing (Posix, Month (..))
 import UUID exposing (UUID)
+import Dict exposing (Dict)
 
 --------------------------------------------------------------------------------
 -- Login
@@ -720,7 +721,7 @@ encodeMailInvitation mailInvitation =
     ]
 
 --------------------------------------------------------------------------------
--- New Vote
+-- Election
 
 type ElectionType = MajorityConsensus | SimpleMajority
 
@@ -740,6 +741,142 @@ encodeElectionType s =
   case s of
     MajorityConsensus -> Encoder.string "Seen"
     SimpleMajority -> Encoder.string "NotSeen"
+
+type alias ElectionChoice = String
+
+decodeElectionChoice : Decoder ElectionChoice
+decodeElectionChoice = Decoder.string
+
+encodeElectionChoice : ElectionChoice -> Value
+encodeElectionChoice = Encoder.string
+
+type alias Election =
+  { unitId : Id Unit
+  , title : String
+  , description : String
+  , choices : List ElectionChoice
+  , electionType : ElectionType
+  , visibleVotes : Bool
+  , endingAt : Posix
+  , result : Maybe ElectionChoice
+  , resultComputedAt : Maybe Posix
+  }
+
+decodeElection : Decoder Election
+decodeElection =
+  Decoder.succeed Election
+    |> andMap (Decoder.field "unitId" decodeId)
+    |> andMap (Decoder.field "title" Decoder.string)
+    |> andMap (Decoder.field "description" Decoder.string)
+    |> andMap (Decoder.field "choices" (Decoder.list decodeElectionChoice))
+    |> andMap (Decoder.field "electionType" decodeElectionType)
+    |> andMap (Decoder.field "visibleVotes" Decoder.bool)
+    |> andMap (Decoder.field "endingAt"  decodePosix)
+    |> andMap (Decoder.field "result" (Decoder.nullable decodeElectionChoice))
+    |> andMap (Decoder.field "resultComputedAt" (Decoder.nullable decodePosix))
+
+type alias ElectionInfo =
+  { electionId : Id Election
+  , election : Election
+  , votedAt : Maybe Posix
+  }
+
+decodeElectionInfo : Decoder ElectionInfo
+decodeElectionInfo =
+  Decoder.succeed ElectionInfo
+    |> andMap (Decoder.field "electionId" decodeId)
+    |> andMap (Decoder.field "election" decodeElection)
+    |> andMap (Decoder.field "votedAt" (Decoder.nullable decodePosix))
+
+type alias NewElection =
+    { unitId : Id Unit
+    , title : String
+    , description : String
+    , choices : List ElectionChoice
+    , electionType : ElectionType
+    , visibleVotes : Bool
+    , endingAt : Posix
+    }
+
+encodeNewElection : NewElection -> Value
+encodeNewElection newElection =
+  Encoder.object
+    [ ("unitId", encodeId newElection.unitId)
+    , ("title", Encoder.string newElection.title)
+    , ("description", Encoder.string newElection.description )
+    , ( "choices", Encoder.list encodeElectionChoice newElection.choices )
+    , ( "electionType", encodeElectionType  newElection.electionType )
+    , ( "visibleVotes", Encoder.bool newElection.visibleVotes )
+    , ( "endingAt", Encoder.int <| Time.posixToMillis newElection.endingAt )
+    ]
+
+--------------------------------------------------------------------------------
+-- Votes
+
+type alias NewVote =
+  { electionId : Id Election
+  , payload : VotePayload
+  }
+
+encodeNewVote : NewVote -> Value
+encodeNewVote newVote =
+  Encoder.object
+   [ ( "electionId", encodeId newVote.electionId )
+   , ( "payload ", encodeVotePayload newVote.payload )
+   ]
+
+type VotePayload
+  = VotePayloadMajorityConsensus (Dict ElectionChoice Grade)
+  | VotePayloadSimpleMajority (Maybe ElectionChoice)
+
+encodeVotePayload : VotePayload -> Value
+encodeVotePayload p =
+  case p of
+    VotePayloadMajorityConsensus dict ->
+      Encoder.object
+        [ ( "tag", Encoder.string "VotePayloadMajorityConsensus" )
+        , ( "contents", Encoder.dict identity encodeGrade dict )
+        ]
+
+    VotePayloadSimpleMajority possibleChoice ->
+      Encoder.object
+        [ ( "tag", Encoder.string "VotePayloadSimpleMajority")
+        , ( "contents",
+            case possibleChoice of
+              Nothing -> Encoder.null
+              Just choice -> Encoder.string choice
+          )
+        ]
+
+-- This is needed for Id references
+type alias Vote =
+  { electionId : Id Election
+  , payload : VotePayload
+  }
+
+type Grade
+  = GradeExcellent
+  | GradeVeryGood
+  | GradeGood
+  | GradeAcceptable
+  | GradeBad
+  | GradeVeryBad
+
+encodeGrade : Grade -> Value
+encodeGrade grade =
+    case grade of
+        GradeExcellent ->
+            Encoder.string "GradeExcellent"
+        GradeVeryGood ->
+            Encoder.string "GradeVeryGood"
+        GradeGood ->
+            Encoder.string "GradeGood"
+        GradeAcceptable ->
+            Encoder.string "GradeAcceptable"
+        GradeBad ->
+            Encoder.string "GradeBad"
+        GradeVeryBad ->
+            Encoder.string "GradeVeryBad"
 
 --------------------------------------------------------------------------------
 -- Helpers
