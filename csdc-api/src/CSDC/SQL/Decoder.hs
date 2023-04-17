@@ -114,10 +114,34 @@ replyStatus = column (nonNullable (Decoders.enum decode))
         ]
         
 electionChoiceList :: Row [ElectionChoice]
-electionChoiceList = undefined
+electionChoiceList = column (nonNullable (Decoders.enum decode))
+  where
+    decode a =
+      lookup
+        a
+        [ ("Reject", Reject),
+          ("Poor", Poor),
+          ("Acceptable", Acceptable),
+          ("Good", Good),
+          ("VeryGood", VeryGood),
+          ("Excellent", Excellent)
+        ]
 
 electionChoiceNullable :: Row (Maybe ElectionChoice)
-electionChoiceNullable = undefined
+electionChoiceNullable = column (nonNullable (Decoders.enum decode))
+  where
+    decode a =
+      lookup
+        a
+        [ ("Null", Null)
+        ]
 
 electionType :: Row ElectionType
-electionType = undefined
+electionType = column (nonNullable (Decoders.enum decode))
+  where
+    decode a =
+      lookup
+        a
+        [ ("Simple_majority", Simple_majority),
+          ("Majority_consensus", Majority_consensus)
+        ]

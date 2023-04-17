@@ -41,7 +41,7 @@ import Prelude hiding (id)
 -- Base types
 
 bool :: Params Bool
-bool = undefined
+bool = param (nonNullable Encoders.bool)
 
 bytea :: Params ByteString
 bytea = param (nonNullable Encoders.bytea)
@@ -107,10 +107,20 @@ replyStatus = contramap encode text
     encode NotSeen = "NotSeen"
     
 electionType :: Params ElectionType
-electionType = undefined
+electionType = contramap encode text
+  where
+    encode Simple_majority = "Simple_majority"
+    encode Majority_consensus = "Majority_consensus"
 
 electionChoiceList :: Params [ElectionChoice]
-electionChoiceList = undefined
+electionChoiceList = contramap encode text
+  where
+    encode Reject = "Reject"
+    encode Poor = "Poor"
+    encode Acceptable = "Acceptable"
+    encode Good = "Good"
+    encode VeryGood = "VeryGood"
+    encode Excellent = "Excellent"
 
 votePayload :: Params VotePayload
 votePayload = undefined

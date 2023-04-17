@@ -1,6 +1,6 @@
 CREATE TYPE election_type AS enum (
-  'simple_majority',
-  'majority_consensus'
+  'Simple_majority',
+  'Majority_consensus'
   );
 
 
