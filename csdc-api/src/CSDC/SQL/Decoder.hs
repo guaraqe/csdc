@@ -142,6 +142,6 @@ electionType = column (nonNullable (Decoders.enum decode))
     decode a =
       lookup
         a
-        [ ("Simple_majority", Simple_majority),
-          ("Majority_consensus", Majority_consensus)
+        [ ("SimpleMajority", SimpleMajority),
+          ("MajorityConsensus", MajorityConsensus)
         ]

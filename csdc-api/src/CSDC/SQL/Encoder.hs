@@ -109,8 +109,8 @@ replyStatus = contramap encode text
 electionType :: Params ElectionType
 electionType = contramap encode text
   where
-    encode Simple_majority = "Simple_majority"
-    encode Majority_consensus = "Majority_consensus"
+    encode SimpleMajority = "SimpleMajority"
+    encode MajorityConsensus = "MajorityConsensus"
 
 electionChoiceList :: Params [ElectionChoice]
 electionChoiceList = contramap encode text
