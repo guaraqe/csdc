@@ -3,6 +3,18 @@ CREATE TYPE election_type AS enum (
   'Majority_consensus'
   );
 
+CREATE TYPE electionChoiceList AS enum (
+  'Reject',
+  'Poor',
+  'Acceptable',
+  'Good',
+  'VeryGood',
+  'Excellent'
+  );
+  
+  CREATE TYPE electionChoiceNullable AS enum (
+  'Null'
+  );
 
 CREATE TABLE elections
 (
