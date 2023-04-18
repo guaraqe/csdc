@@ -18,7 +18,7 @@ module CSDC.SQL.Decoder
     electionChoiceList,
     electionChoiceNullable,
     electionType,
-    
+
     -- * Reexport
     Decoders.rowList,
     Decoders.rowMaybe,
@@ -56,7 +56,7 @@ posixTimeNullable :: Row (Maybe POSIXTime)
 posixTimeNullable =
   fmap utcTimeToPOSIXSeconds
     <$> column (nullable Decoders.timestamptz)
-    
+
 text :: Row Text
 text = column (nonNullable Decoders.text)
 
@@ -112,29 +112,12 @@ replyStatus = column (nonNullable (Decoders.enum decode))
         [ ("Seen", Seen),
           ("NotSeen", NotSeen)
         ]
-        
+
 electionChoiceList :: Row [ElectionChoice]
-electionChoiceList = column (nonNullable (Decoders.enum decode))
-  where
-    decode a =
-      lookup
-        a
-        [ ("Reject", Reject),
-          ("Poor", Poor),
-          ("Acceptable", Acceptable),
-          ("Good", Good),
-          ("VeryGood", VeryGood),
-          ("Excellent", Excellent)
-        ]
+electionChoiceList = fmap ElectionChoice <$> textList
 
 electionChoiceNullable :: Row (Maybe ElectionChoice)
-electionChoiceNullable = column (nonNullable (Decoders.enum decode))
-  where
-    decode a =
-      lookup
-        a
-        [ ("Null", Null)
-        ]
+electionChoiceNullable = fmap ElectionChoice <$> textNullable
 
 electionType :: Row ElectionType
 electionType = column (nonNullable (Decoders.enum decode))

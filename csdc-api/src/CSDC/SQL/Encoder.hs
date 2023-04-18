@@ -52,8 +52,8 @@ int = contramap fromIntegral $ param (nonNullable Encoders.int8)
 posixTime :: Params POSIXTime
 posixTime =
   contramap posixSecondsToUTCTime $
-  param (nonNullable Encoders.timestamptz)
-  
+    param (nonNullable Encoders.timestamptz)
+
 text :: Params Text
 text = param (nonNullable Encoders.text)
 
@@ -105,7 +105,7 @@ replyStatus = contramap encode text
   where
     encode Seen = "Seen"
     encode NotSeen = "NotSeen"
-    
+
 electionType :: Params ElectionType
 electionType = contramap encode text
   where
@@ -113,14 +113,7 @@ electionType = contramap encode text
     encode MajorityConsensus = "MajorityConsensus"
 
 electionChoiceList :: Params [ElectionChoice]
-electionChoiceList = contramap encode text
-  where
-    encode Reject = "Reject"
-    encode Poor = "Poor"
-    encode Acceptable = "Acceptable"
-    encode Good = "Good"
-    encode VeryGood = "VeryGood"
-    encode Excellent = "Excellent"
+electionChoiceList = contramap (fmap (.getElectionChoice)) textList
 
 votePayload :: Params VotePayload
 votePayload = undefined

@@ -8,9 +8,9 @@ import CSDC.Image
 import CSDC.Mail qualified as Mail
 import CSDC.Mail.Templates qualified as Mail.Templates
 import CSDC.Prelude
+import CSDC.SQL.Elections qualified as SQL.Elections
 import CSDC.SQL.Files qualified as SQL.Files
 import CSDC.SQL.Forum qualified as SQL.Forum
-import CSDC.SQL.Elections qualified as SQL.Elections
 import CSDC.SQL.Mail qualified as SQL.Mail
 import CSDC.SQL.MailInvitations qualified as SQL.MailInvitations
 import CSDC.SQL.Members qualified as SQL.Members

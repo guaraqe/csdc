@@ -23,7 +23,6 @@ import CSDC.Prelude hiding (Post)
 import CSDC.SQL.Persons qualified as SQL.Persons
 import Data.Password.Bcrypt (PasswordCheck (..), checkPassword, mkPassword)
 import Servant hiding (Server, Unauthorized, throwError)
-import Servant.Server.Generic (AsServerT)
 import Servant.Auth.Server
   ( Auth,
     AuthResult (..),
@@ -39,6 +38,7 @@ import Servant.Auth.Server
     defaultJWTSettings,
     generateKey,
   )
+import Servant.Server.Generic (AsServerT)
 
 --------------------------------------------------------------------------------
 -- User
@@ -73,9 +73,10 @@ data SigninAPI mode = SigninAPI
   deriving (Generic)
 
 serveSigninAPI :: Settings -> Server SigninAPI
-serveSigninAPI settings = SigninAPI
-  { signin = authenticate settings
-  }
+serveSigninAPI settings =
+  SigninAPI
+    { signin = authenticate settings
+    }
 
 authenticate :: Settings -> Login -> Action () (CookieHeaders NoContent)
 authenticate (Settings cookieSettings jwtSettings) (Login email password) =
@@ -103,9 +104,10 @@ data SignupAPI mode = SignupAPI
   deriving (Generic)
 
 serveSignupAPI :: Server SignupAPI
-serveSignupAPI = SignupAPI
-  { signup = createUser
-  }
+serveSignupAPI =
+  SignupAPI
+    { signup = createUser
+    }
 
 --------------------------------------------------------------------------------
 -- Signout API
@@ -116,9 +118,10 @@ data SignoutAPI mode = SignoutAPI
   deriving (Generic)
 
 serveSignoutAPI :: Monad m => Settings -> SignoutAPI (AsServerT m)
-serveSignoutAPI (Settings {..}) = SignoutAPI
-  { signout = return $ clearSession settingsCookie ""
-  }
+serveSignoutAPI (Settings {..}) =
+  SignoutAPI
+    { signout = return $ clearSession settingsCookie ""
+    }
 
 --------------------------------------------------------------------------------
 -- API with auth
@@ -129,10 +132,10 @@ serveAuthAPI (Authenticated (User personId)) =
 serveAuthAPI _ = throwUnauthorized
 
 data API mode = API
-  { daoAPI :: mode :- "api" :> Auth '[Cookie] User :> DAO.API
-  , signinAPI :: mode :- "signin" :> NamedRoutes SigninAPI
-  , signupAPI :: mode :- "signup" :> NamedRoutes SignupAPI
-  , signoutAPI :: mode :- "signout" :> NamedRoutes SignoutAPI
+  { daoAPI :: mode :- "api" :> Auth '[Cookie] User :> DAO.API,
+    signinAPI :: mode :- "signin" :> NamedRoutes SigninAPI,
+    signupAPI :: mode :- "signup" :> NamedRoutes SignupAPI,
+    signoutAPI :: mode :- "signout" :> NamedRoutes SignoutAPI
   }
   deriving (Generic)
 
@@ -151,12 +154,13 @@ makeSettings = do
       }
 
 serveAPI :: Settings -> Server API
-serveAPI settings = API
-  { daoAPI = serveAuthAPI
-  , signinAPI = serveSigninAPI settings
-  , signupAPI = serveSignupAPI
-  , signoutAPI = serveSignoutAPI settings
-  }
+serveAPI settings =
+  API
+    { daoAPI = serveAuthAPI,
+      signinAPI = serveSigninAPI settings,
+      signupAPI = serveSignupAPI,
+      signoutAPI = serveSignoutAPI settings
+    }
 
 contextProxy :: Proxy '[CookieSettings, JWTSettings]
 contextProxy = Proxy

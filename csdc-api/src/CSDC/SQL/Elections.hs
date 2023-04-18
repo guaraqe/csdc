@@ -13,10 +13,9 @@ module CSDC.SQL.Elections
 where
 
 import CSDC.Prelude
-import CSDC.Types.Election
 import CSDC.SQL.Decoder qualified as Decoder
 import CSDC.SQL.Encoder qualified as Encoder
-import CSDC.SQL.QQ
+import CSDC.Types.Election
 import Data.ByteString.Char8 qualified as ByteString
 import Data.Functor.Contravariant (Contravariant (..))
 import Hasql.Statement (Statement (..))
@@ -30,31 +29,31 @@ insertElection = Statement sql encoder decoder True
           "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
           "RETURNING id"
         ]
-        
+
     encoder =
-		contramap fst Encoder.id
-		<> contramap ((.title) . snd) Encoder.text
-		<> contramap ((.description) . snd) Encoder.text
-		<> contramap ((.choices) . snd) Encoder.electionChoiceList
-		<> contramap ((.electionType) . snd) Encoder.electionType
-		<> contramap ((.visibleVotes) . snd) Encoder.bool
-		<> contramap ((.endingAt) . snd) Encoder.posixTime
-        
+      contramap fst Encoder.id
+        <> contramap ((.title) . snd) Encoder.text
+        <> contramap ((.description) . snd) Encoder.text
+        <> contramap ((.choices) . snd) Encoder.electionChoiceList
+        <> contramap ((.electionType) . snd) Encoder.electionType
+        <> contramap ((.visibleVotes) . snd) Encoder.bool
+        <> contramap ((.endingAt) . snd) Encoder.posixTime
+
     decoder = Decoder.singleRow Decoder.id
 
 selectElections :: Statement (Id Unit, Id Person) [ElectionInfo]
 selectElections = Statement sql encoder decoder True
   where
     sql =
-     ByteString.unlines
+      ByteString.unlines
         [ "SELECT unit, title, description, choices, election_type, visible_votes, ending_at, result, result_computed_at",
           "FROM elections",
           "WHERE id = $1"
         ]
-        
+
     encoder =
-      contramap fst Encoder.id <>
-      contramap snd Encoder.id
+      contramap fst Encoder.id
+        <> contramap snd Encoder.id
 
     decoder = Decoder.rowList $ do
       unit <- Decoder.text
@@ -74,7 +73,7 @@ deleteElection :: Statement (Id Election) ()
 deleteElection = Statement sql encoder decoder True
   where
     sql =
-       ByteString.unlines
+      ByteString.unlines
         [ "DELETE FROM elections",
           "WHERE id = $1"
         ]
@@ -92,7 +91,7 @@ insertVoter = Statement sql encoder decoder True
         ]
 
     encoder =
-       contramap fst Encoder.id
+      contramap fst Encoder.id
         <> contramap snd Encoder.id
 
     decoder = Decoder.noResult
