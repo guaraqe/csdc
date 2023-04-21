@@ -8,9 +8,9 @@ import CSDC.Image
 import CSDC.Mail qualified as Mail
 import CSDC.Mail.Templates qualified as Mail.Templates
 import CSDC.Prelude
+import CSDC.SQL.Elections qualified as SQL.Elections
 import CSDC.SQL.Files qualified as SQL.Files
 import CSDC.SQL.Forum qualified as SQL.Forum
-import CSDC.SQL.Elections qualified as SQL.Elections
 import CSDC.SQL.Mail qualified as SQL.Mail
 import CSDC.SQL.MailInvitations qualified as SQL.MailInvitations
 import CSDC.SQL.Members qualified as SQL.Members
@@ -460,11 +460,11 @@ deleteElection :: Id Election -> ActionAuth ()
 deleteElection electionId = do
   runQuery SQL.Elections.deleteElection electionId
 
-addVote :: Id Election -> NewVote -> ActionAuth (Id Vote)
-addVote electionId newVote = do
+addVote :: Id Election -> VotePayload -> ActionAuth (Id Vote)
+addVote electionId payload = do
   personId <- getUser
   runQuery SQL.Elections.insertVoter (electionId, personId)
-  runQuery SQL.Elections.insertVote (electionId, newVote)
+  runQuery SQL.Elections.insertVote (electionId, payload)
 
 --------------------------------------------------------------------------------
 -- Mail

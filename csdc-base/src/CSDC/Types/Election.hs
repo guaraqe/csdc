@@ -6,7 +6,7 @@ import Data.Aeson (FromJSON (..), FromJSONKey (..), ToJSON (..), ToJSONKey (..))
 import Data.HashMap.Strict (HashMap)
 import Data.Hashable (Hashable)
 import Data.Text (Text)
-import Data.Time (UTCTime)
+import Data.Time.Clock.POSIX (POSIXTime)
 import GHC.Generics (Generic)
 
 --------------------------------------------------------------------------------
@@ -27,9 +27,9 @@ data Election = Election
     choices :: [ElectionChoice],
     electionType :: ElectionType,
     visibleVotes :: Bool,
-    endingAt :: UTCTime,
+    endingAt :: POSIXTime,
     result :: Maybe ElectionChoice,
-    resultComputedAt :: Maybe UTCTime
+    resultComputedAt :: Maybe POSIXTime
   }
   deriving (Show, Eq, Generic)
   deriving anyclass (FromJSON, ToJSON)
@@ -37,7 +37,7 @@ data Election = Election
 data ElectionInfo = ElectionInfo
   { electionId :: Id Election,
     election :: Election,
-    votedAt :: Maybe UTCTime
+    votedAt :: Maybe POSIXTime
   }
   deriving (Show, Eq, Generic)
   deriving anyclass (FromJSON, ToJSON)
@@ -49,7 +49,7 @@ data NewElection = NewElection
     choices :: [ElectionChoice],
     electionType :: ElectionType,
     visibleVotes :: Bool,
-    endingAt :: UTCTime
+    endingAt :: POSIXTime
   }
   deriving (Show, Eq, Generic)
   deriving anyclass (FromJSON, ToJSON)
@@ -88,17 +88,7 @@ data Voter = Voter
   { id :: Id Voter,
     electionId :: Id Election,
     personId :: Id Person,
-    votedAt :: UTCTime,
+    votedAt :: POSIXTime,
     voteId :: Maybe (Id Vote)
   }
   deriving (Show, Eq)
-
---------------------------------------------------------------------------------
--- New Vote
-
-data NewVote = NewVote
-  { electionId :: Id Election,
-    payload :: VotePayload
-  }
-  deriving (Show, Eq, Generic)
-  deriving anyclass (FromJSON, ToJSON)

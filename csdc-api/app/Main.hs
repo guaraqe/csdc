@@ -71,8 +71,7 @@ application :: FilePath -> Auth.Settings -> Action.Context () -> Application
 application path settings context =
   let sqlContext = context.sql
       cfg = Auth.makeContext settings
-  in
-    genericServeTWithContext (Action.run context) (serveAPI path sqlContext settings) cfg
+   in genericServeTWithContext (Action.run context) (serveAPI path sqlContext settings) cfg
 
 migrate :: Context -> IO ()
 migrate context = do
