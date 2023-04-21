@@ -24,6 +24,7 @@ where
 
 import CSDC.Prelude
 import CSDC.Types.Election
+import Data.Aeson qualified as JSON
 import Data.ByteString (ByteString)
 import Data.Functor.Contravariant (Contravariant (..))
 import Data.Time.Clock.POSIX (POSIXTime, posixSecondsToUTCTime)
@@ -62,6 +63,9 @@ textNullable = param (nullable Encoders.text)
 
 textList :: Params [Text]
 textList = param $ nonNullable $ foldableArray $ nonNullable Encoders.text
+
+jsonb :: Params JSON.Value
+jsonb = param (nonNullable Encoders.jsonb)
 
 --------------------------------------------------------------------------------
 -- Local types
@@ -116,4 +120,4 @@ electionChoiceList :: Params [ElectionChoice]
 electionChoiceList = contramap (fmap (.getElectionChoice)) textList
 
 votePayload :: Params VotePayload
-votePayload = undefined
+votePayload = contramap JSON.toJSON jsonb

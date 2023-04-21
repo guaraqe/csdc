@@ -12,7 +12,7 @@ where
 import CSDC.Action
 import CSDC.DAO
 import CSDC.Prelude
-import CSDC.Types.Election (Election, ElectionInfo, NewElection, NewVote, Vote)
+import CSDC.Types.Election (Election, ElectionInfo, NewElection, Vote, VotePayload)
 import CSDC.Types.File (Base64File, File (..), FileUI)
 import Data.ByteString.Lazy qualified as Lazy
 import Servant hiding (Post)
@@ -122,7 +122,7 @@ data ElectionAPI mode = ElectionAPI
     -- DELETE election/<election-id>
     deleteElection :: mode :- CaptureId Election :> DeleteJSON (),
     -- POST election/<election-id>/vote
-    addVote :: mode :- CaptureId Election :> "vote" :> PostJSON NewVote (Id Vote)
+    addVote :: mode :- CaptureId Election :> "vote" :> PostJSON VotePayload (Id Vote)
   }
   deriving (Generic)
 

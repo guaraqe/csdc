@@ -92,13 +92,3 @@ data Voter = Voter
     voteId :: Maybe (Id Vote)
   }
   deriving (Show, Eq)
-
---------------------------------------------------------------------------------
--- New Vote
-
-data NewVote = NewVote
-  { electionId :: Id Election,
-    payload :: VotePayload
-  }
-  deriving (Show, Eq, Generic)
-  deriving anyclass (FromJSON, ToJSON)

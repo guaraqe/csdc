@@ -460,11 +460,11 @@ deleteElection :: Id Election -> ActionAuth ()
 deleteElection electionId = do
   runQuery SQL.Elections.deleteElection electionId
 
-addVote :: Id Election -> NewVote -> ActionAuth (Id Vote)
-addVote electionId newVote = do
+addVote :: Id Election -> VotePayload -> ActionAuth (Id Vote)
+addVote electionId payload = do
   personId <- getUser
   runQuery SQL.Elections.insertVoter (electionId, personId)
-  runQuery SQL.Elections.insertVote (electionId, newVote.payload)
+  runQuery SQL.Elections.insertVote (electionId, payload)
 
 --------------------------------------------------------------------------------
 -- Mail
