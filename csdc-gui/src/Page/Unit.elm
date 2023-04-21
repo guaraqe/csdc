@@ -15,6 +15,7 @@ import Page as Page
 import Types exposing (..)
 import Page.UnitInfo as UnitInfo
 import Page.UnitAdmin as UnitAdmin
+import Page.UnitElections as UnitElections
 import Page.UnitFiles as UnitFiles
 import Page.UnitForum as UnitForum
 import WebData exposing (WebData)
@@ -30,6 +31,7 @@ type alias Model =
   , unitInfo : UnitInfo.Model
   , unitAdmin : UnitAdmin.Model
   , unitFiles : UnitFiles.Model
+  , unitElections : UnitElections.Model
   , unitForum : UnitForum.Model
   , notification : Notification
   }
@@ -40,6 +42,7 @@ initial =
   , unitInfo = UnitInfo.initial
   , unitAdmin = UnitAdmin.initial
   , unitFiles = UnitFiles.initial
+  , unitElections = UnitElections.initial
   , unitForum = UnitForum.initial
   , notification = Notification.Empty
   }
@@ -65,7 +68,7 @@ setupTab id tab =
     Page.UnitAdmin -> Cmd.map UnitAdminMsg <| UnitAdmin.setup id
     Page.UnitFiles -> Cmd.map UnitFilesMsg <| UnitFiles.setup id
     Page.UnitForum mtid -> Cmd.map (UnitForumMsg mtid) <| UnitForum.setup id mtid
-    Page.UnitElections -> Cmd.none
+    Page.UnitElections -> Cmd.map UnitElectionsMsg <| UnitElections.setup id
 
 --------------------------------------------------------------------------------
 -- Update
@@ -77,6 +80,7 @@ type Msg
   | UnitInfoMsg UnitInfo.Msg
   | UnitAdminMsg UnitAdmin.Msg
   | UnitFilesMsg UnitFiles.Msg
+  | UnitElectionsMsg UnitElections.Msg
   | UnitForumMsg (Maybe (Id Thread)) UnitForum.Msg
 
 update : Page.Info -> Msg -> Model -> (Model, Cmd Msg)
@@ -107,6 +111,14 @@ update pageInfo msg model =
       in
         ( { model | unitFiles = unitFiles }
         , Cmd.map UnitFilesMsg cmd
+        )
+
+    UnitElectionsMsg umsg -> WebData.update model model.info <| \info ->
+      let
+        (unitElections, cmd) = UnitElections.update pageInfo info umsg model.unitElections
+      in
+        ( { model | unitElections = unitElections }
+        , Cmd.map UnitElectionsMsg cmd
         )
 
     UnitForumMsg mtid umsg -> WebData.update model model.info <| \info ->
@@ -185,7 +197,10 @@ view model tab =
       Page.UnitFiles ->
         List.map (Html.map UnitFilesMsg) <|
         UnitFiles.view info model.unitFiles
-      Page.UnitElections -> []
+      Page.UnitElections ->
+        List.map (Html.map UnitElectionsMsg) <|
+        UnitElections.view info model.unitElections
+
   ]
 
 sameTab : Page.UnitTab -> Page.UnitTab -> Bool
