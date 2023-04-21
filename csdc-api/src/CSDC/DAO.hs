@@ -338,6 +338,8 @@ getUnitInfo uid = do
         if False -- isMember
           then pure True
           else runQuery SQL.Members.isIndirectMember (userId, uid)
+      electionsPending <-
+        runQuery SQL.Elections.selectPendingElections (uid, userId)
       pure $
         Just
           UnitInfo
@@ -351,6 +353,7 @@ getUnitInfo uid = do
               isMember = isMember,
               isIndirectMember = isIndirectMember,
               isMembershipPending = isMembershipPending,
+              electionsPending = electionsPending,
               unitsForMessage = unitsForMessage
             }
 

@@ -24,7 +24,7 @@ type Page
   | Person (Id Person)
   | Unit UnitTab (Id Unit)
 
-type UnitTab = UnitInfo | UnitAdmin | UnitFiles | UnitForum (Maybe (Id Thread))
+type UnitTab = UnitInfo | UnitAdmin | UnitElections | UnitFiles | UnitForum (Maybe (Id Thread))
 
 type alias Info =
   { key : Nav.Key
@@ -61,6 +61,7 @@ toFragments page =
       case tab of
         UnitInfo -> []
         UnitAdmin -> ["admin"]
+        UnitElections -> ["elections"]
         UnitFiles -> ["files"]
         UnitForum Nothing -> ["forum"]
         UnitForum (Just tid) -> ["forum", toFragmentId tid]
@@ -88,6 +89,8 @@ fromFragments l =
       default <| Maybe.map (Unit UnitInfo) (fromFragmentId uid)
     ["unit", uid, "admin"] ->
       default <| Maybe.map (Unit UnitAdmin) (fromFragmentId uid)
+    ["unit", uid, "elections"] ->
+      default <| Maybe.map (Unit UnitElections) (fromFragmentId uid)
     ["unit", uid, "files"] ->
       default <| Maybe.map (Unit UnitFiles) (fromFragmentId uid)
     ["unit", uid, "forum"] ->

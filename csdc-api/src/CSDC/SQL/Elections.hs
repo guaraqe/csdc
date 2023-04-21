@@ -12,6 +12,7 @@ module CSDC.SQL.Elections
     selectResolvableElections,
     selectElectionVotes,
     updateElectionResult,
+    selectPendingElections,
   )
 where
 
@@ -206,3 +207,25 @@ updateElectionResult = Statement sql encoder decoder True
         <> contramap snd Encoder.electionChoiceNullable
 
     decoder = Decoders.noResult
+
+selectPendingElections :: Statement (Id Unit, Id Person) Int
+selectPendingElections = Statement sql encoder decoder True
+  where
+    sql =
+      [sqlqq|
+        SELECT
+          ( SELECT COUNT(*)
+            FROM elections
+            WHERE elections.unit = $1 AND result IS NULL
+          ) -
+          ( SELECT COUNT(*)
+            FROM elections JOIN voters ON elections.id = voters.election
+            WHERE elections.unit = $1 AND voters.person = $2 AND result IS NULL
+          )
+      |]
+
+    encoder =
+      contramap fst Encoder.id
+        <> contramap snd Encoder.id
+
+    decoder = Decoder.singleRow Decoder.int

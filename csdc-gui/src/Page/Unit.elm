@@ -65,6 +65,7 @@ setupTab id tab =
     Page.UnitAdmin -> Cmd.map UnitAdminMsg <| UnitAdmin.setup id
     Page.UnitFiles -> Cmd.map UnitFilesMsg <| UnitFiles.setup id
     Page.UnitForum mtid -> Cmd.map (UnitForumMsg mtid) <| UnitForum.setup id mtid
+    Page.UnitElections -> Cmd.none
 
 --------------------------------------------------------------------------------
 -- Update
@@ -160,6 +161,7 @@ view model tab =
             then
               [ (Page.UnitInfo, "Information")
               , (Page.UnitForum Nothing, "Forum")
+              , (Page.UnitElections, "Elections (" ++ String.fromInt info.electionsPending ++ ")")
               , (Page.UnitFiles, "Files")
               ]
             else []
@@ -183,6 +185,7 @@ view model tab =
       Page.UnitFiles ->
         List.map (Html.map UnitFilesMsg) <|
         UnitFiles.view info model.unitFiles
+      Page.UnitElections -> []
   ]
 
 sameTab : Page.UnitTab -> Page.UnitTab -> Bool
