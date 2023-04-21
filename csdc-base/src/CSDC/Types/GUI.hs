@@ -80,6 +80,7 @@ data UnitInfo = UnitInfo
     isMember :: Bool,
     isAdmin :: Bool,
     isMembershipPending :: Bool,
+    electionsPending :: Int,
     unitsForMessage :: [WithId Unit]
   }
   deriving (Show, Eq, Generic)

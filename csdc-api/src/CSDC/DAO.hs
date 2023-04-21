@@ -329,6 +329,8 @@ getUnitInfo uid = do
       parents <- getUnitParents uid
       unitsForMessage <-
         runQuery SQL.MessageSubparts.getUnitsForMessage (userId, uid)
+      electionsPending <-
+        runQuery SQL.Elections.selectPendingElections (uid, userId)
       pure $
         Just
           UnitInfo
@@ -341,6 +343,7 @@ getUnitInfo uid = do
               isAdmin = unit.chairId == userId,
               isMember = any (\m -> m.personId == userId) members,
               isMembershipPending = isMembershipPending,
+              electionsPending = electionsPending,
               unitsForMessage = unitsForMessage
             }
 

@@ -270,6 +270,7 @@ type alias UnitInfo =
   , isMember : Bool
   , isAdmin : Bool
   , isMembershipPending : Bool
+  , electionsPending : Int
   , unitsForMessage : List (WithId Unit)
   }
 
@@ -285,6 +286,7 @@ decodeUnitInfo =
     |> andMap (Decoder.field "isMember" Decoder.bool)
     |> andMap (Decoder.field "isAdmin" Decoder.bool)
     |> andMap (Decoder.field "isMembershipPending" Decoder.bool)
+    |> andMap (Decoder.field "electionsPending" Decoder.int)
     |> andMap (Decoder.field "unitsForMessage" (Decoder.list (decodeWithId decodeUnit)))
 
 andMap : Decoder a -> Decoder (a -> b) -> Decoder b
