@@ -813,18 +813,6 @@ encodeNewElection newElection =
 --------------------------------------------------------------------------------
 -- Votes
 
-type alias NewVote =
-  { electionId : Id Election
-  , payload : VotePayload
-  }
-
-encodeNewVote : NewVote -> Value
-encodeNewVote newVote =
-  Encoder.object
-   [ ( "electionId", encodeId newVote.electionId )
-   , ( "payload ", encodeVotePayload newVote.payload )
-   ]
-
 type VotePayload
   = VotePayloadMajorityConsensus (Dict ElectionChoice Grade)
   | VotePayloadSimpleMajority (Maybe ElectionChoice)

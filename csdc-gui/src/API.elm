@@ -365,10 +365,10 @@ deleteElection : Id Election -> Cmd (Response ())
 deleteElection = delete "election" identity
 
  -- POST election/<election-id>/vote
-addVote : Id Election -> NewVote -> Cmd (Response (Id Vote))
-addVote  uid newVote =
+addVote : Id Election -> VotePayload -> Cmd (Response (Id Vote))
+addVote  uid votePayload =
   Http.post
-    { url = baseUrl ++ "vote/unit/" ++ idToString uid
-    , body = Http.jsonBody <| encodeNewVote newVote
+    { url = baseUrl ++ "election/" ++ idToString uid ++ "vote/"
+    , body = Http.jsonBody <| encodeVotePayload votePayload
     , expect = Http.expectJson identity decodeId
     }
