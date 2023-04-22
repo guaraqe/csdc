@@ -28,7 +28,8 @@ view zone toMsg electionInfo =
               ]
           , Html.div
               [ Html.Attributes.class "column is-one-quarter" ]
-              [ Html.br [] []
+              [ Html.text <| String.fromInt electionInfo.totalVotes ++ " votes"
+              , Html.br [] []
               , Html.em []
                   [ case electionInfo.votedAt of
                       Just date ->
