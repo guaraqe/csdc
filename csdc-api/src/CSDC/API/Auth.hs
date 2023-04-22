@@ -37,8 +37,11 @@ import Servant.Auth.Server
     defaultCookieSettings,
     defaultJWTSettings,
     generateKey,
+    writeKey,
+    readKey,
   )
 import Servant.Server.Generic (AsServerT)
+import System.Directory (doesFileExist)
 
 --------------------------------------------------------------------------------
 -- User
@@ -144,9 +147,17 @@ data Settings = Settings
     settingsJWT :: JWTSettings
   }
 
-makeSettings :: IO Settings
-makeSettings = do
-  key <- generateKey
+makeSettings :: Maybe FilePath -> IO Settings
+makeSettings mpath = do
+  key <- case mpath of
+    Nothing -> generateKey
+    Just path -> do
+      doesFileExist path >>= \case
+        False ->
+          writeKey path
+        True ->
+          pure ()
+      readKey path
   pure
     Settings
       { settingsCookie = defaultCookieSettings {cookieXsrfSetting = Nothing},

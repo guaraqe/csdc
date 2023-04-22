@@ -52,7 +52,7 @@ mainWith Context {..} = do
   putStrLn "Server ready."
   withStdoutLogger $ \logger -> do
     let settings = setPort port $ setLogger logger defaultSettings
-    authSettings <- Auth.makeSettings
+    authSettings <- Auth.makeSettings jwkPath
     runSettings settings $
       middleware $
         application path authSettings dao

@@ -17,4 +17,5 @@
     { "path": "ipfs"
     }
 , "migration": "database/migrations"
+, "jwkPath": "tmp/jwk.json"
 }

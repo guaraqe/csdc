@@ -78,7 +78,8 @@ data Config = Config
     sql :: SQLConfig,
     mail :: MailConfig,
     ipfs :: IPFS.Config,
-    migration :: FilePath
+    migration :: FilePath,
+    jwkPath :: Maybe FilePath
   }
   deriving (Show, Eq, Generic)
   deriving (FromJSON, ToJSON)
@@ -109,7 +110,8 @@ data Context = Context
   { port :: Int,
     path :: FilePath,
     dao :: Action.Context (),
-    migration :: FilePath
+    migration :: FilePath,
+    jwkPath :: Maybe FilePath
   }
   deriving (Generic)
 
@@ -129,7 +131,8 @@ activate config = do
               Action.ipfs = ipfs,
               Action.user = ()
             },
-        migration = config.migration
+        migration = config.migration,
+        jwkPath = config.jwkPath
       }
 
 --------------------------------------------------------------------------------

@@ -25,6 +25,7 @@ common dependencies
     binary,
     base64-bytestring,
     bytestring,
+    directory,
     filepath,
     ghc-prim,
     hasql,
