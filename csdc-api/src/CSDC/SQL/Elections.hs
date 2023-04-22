@@ -216,11 +216,11 @@ selectPendingElections = Statement sql encoder decoder True
         SELECT
           ( SELECT COUNT(*)
             FROM elections
-            WHERE elections.unit = $1 AND result IS NULL
+            WHERE elections.unit = $1 AND result_computed_at IS NULL
           ) -
           ( SELECT COUNT(*)
             FROM elections JOIN voters ON elections.id = voters.election
-            WHERE elections.unit = $1 AND voters.person = $2 AND result IS NULL
+            WHERE elections.unit = $1 AND voters.person = $2 AND result_computed_at IS NULL
           )
       |]
 
