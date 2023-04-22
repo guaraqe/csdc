@@ -785,6 +785,7 @@ type alias ElectionInfo =
   { electionId : Id Election
   , election : Election
   , votedAt : Maybe Posix
+  , totalVotes : Int
   }
 
 decodeElectionInfo : Decoder ElectionInfo
@@ -793,6 +794,7 @@ decodeElectionInfo =
     |> andMap (Decoder.field "electionId" decodeId)
     |> andMap (Decoder.field "election" decodeElection)
     |> andMap (Decoder.field "votedAt" (Decoder.nullable decodePosix))
+    |> andMap (Decoder.field "totalVotes" Decoder.int)
 
 type alias NewElection =
     { unitId : Id Unit
