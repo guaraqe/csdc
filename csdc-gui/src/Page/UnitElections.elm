@@ -19,6 +19,7 @@ import Browser.Dom as Dom
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
+import Time
 
 --------------------------------------------------------------------------------
 -- Model
@@ -50,9 +51,10 @@ setup id = Cmd.batch
 
 type Msg
   = SetElections (API.Response (List ElectionInfo))
+  | SelectElection (Id Election)
   | ElectionFormOpen
   | ElectionFormClose
-  | VoteFormOpen (Id Election)
+  | VoteFormOpen
   | VoteFormClose
   | ResetNotification
 
@@ -67,6 +69,11 @@ update pageInfo info msg model =
       , Cmd.none
       )
 
+    SelectElection electionId ->
+      ( { model | selected = Just electionId }
+      , Cmd.none
+      )
+
     ElectionFormOpen ->
       ( { model | electionFormOpen = True }
       , Cmd.none
@@ -77,8 +84,8 @@ update pageInfo info msg model =
       , Cmd.none
       )
 
-    VoteFormOpen electionId ->
-      ( { model | voteFormOpen = True, selected = Just electionId }
+    VoteFormOpen ->
+      ( { model | voteFormOpen = True }
       , Cmd.none
       )
 
@@ -105,11 +112,62 @@ view unit model =
           [ Html.Attributes.class "column is-half" ]
           [ Column.view "Elections"
             ( if unit.isAdmin
-              then [smallButton]
+              then [smallButton "Create Election" ElectionFormOpen]
               else []
             ) <|
             viewElections model.elections
           ]
+      , case model.selected of
+          Nothing -> Html.div [] []
+          Just electionId ->
+            case lookup (\obj -> obj.electionId == electionId) model.elections of
+              Nothing -> Html.div [] []
+              Just electionInfo ->
+                Html.div
+                  [ Html.Attributes.class "column is-half" ]
+                  [ Column.view electionInfo.election.title
+                      [ case electionInfo.votedAt of
+                          Just time -> Html.text (viewPosixAt Time.utc time)
+                          Nothing ->
+                            case electionInfo.election.resultComputedAt of
+                              Nothing ->
+                                smallButton "Vote" ElectionFormOpen
+                              Just _ ->
+                                Html.text <|
+                                case electionInfo.election.result of
+                                  Nothing -> "The election has no result."
+                                  Just result -> "Winner: " ++ result
+                      ]
+                      [ Html.em
+                          []
+                          [ Html.text <|
+                              let
+                                time = viewPosixAt Time.utc electionInfo.election.endingAt
+                              in
+                                case electionInfo.election.resultComputedAt of
+                                  Just _ -> "Closed at " ++ time
+                                  Nothing -> "Open until " ++ time
+                          ]
+                      , Html.div
+                          [ Html.Attributes.style "margin-top" "10px"
+                          , Html.Attributes.style "margin-bottom" "10px"
+                          ]
+                          [ Html.strong [] [Html.text "Description"] ]
+
+                      , Html.text electionInfo.election.description
+
+                      , Html.div
+                          [ Html.Attributes.style "margin-top" "10px"
+                          , Html.Attributes.style "margin-bottom" "10px"
+                          ]
+                          [ Html.strong [] [Html.text "Choices"] ]
+
+                      , Html.ul
+                         [ Html.Attributes.style "margin-top" "0px"
+                         ] <|
+                         List.map (\choice -> Html.li [] [Html.text choice]) electionInfo.election.choices
+                      ]
+                  ]
       ]
 
   , Modal.view model.electionFormOpen ElectionFormClose <|
@@ -122,13 +180,13 @@ view unit model =
   Notification.view model.notification
 
 viewElections : List ElectionInfo -> List (Html Msg)
-viewElections = List.map (BoxElection.view VoteFormOpen)
+viewElections = List.map (BoxElection.view Time.utc SelectElection)
 
-smallButton : Html Msg
-smallButton =
+smallButton : String -> Msg -> Html Msg
+smallButton text msg =
   Html.button
     [ Html.Attributes.class "button is-success is-small"
-    , Html.Events.onClick ElectionFormOpen
+    , Html.Events.onClick msg
     ]
-    [ Html.text "Create Election"
+    [ Html.text text
     ]
