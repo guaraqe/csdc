@@ -68,7 +68,8 @@ selectElections = Statement sql encoder decoder True
           ending_at,
           result,
           result_computed_at,
-          (SELECT voted_at FROM voters WHERE election = elections.id AND person = $2)
+          (SELECT voted_at FROM voters WHERE election = elections.id AND person = $2),
+          (SELECT COUNT(*) FROM voters WHERE election = elections.id)
         FROM elections
         WHERE unit = $1
       |]
@@ -91,6 +92,7 @@ selectElections = Statement sql encoder decoder True
         resultComputedAt <- Decoder.posixTimeNullable
         pure Election {..}
       votedAt <- Decoder.posixTimeNullable
+      totalVotes <- Decoder.int
       pure ElectionInfo {..}
 
 deleteElection :: Statement (Id Election) ()
