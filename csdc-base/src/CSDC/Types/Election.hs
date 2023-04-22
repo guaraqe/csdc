@@ -37,7 +37,8 @@ data Election = Election
 data ElectionInfo = ElectionInfo
   { electionId :: Id Election,
     election :: Election,
-    votedAt :: Maybe POSIXTime
+    votedAt :: Maybe POSIXTime,
+    totalVotes :: Int
   }
   deriving (Show, Eq, Generic)
   deriving anyclass (FromJSON, ToJSON)
