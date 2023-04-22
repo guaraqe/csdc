@@ -48,15 +48,12 @@ library
     src
   default-extensions:
     DeriveAnyClass
-    DeriveGeneric
     DerivingStrategies
     DerivingVia
     DuplicateRecordFields
-    GeneralizedNewtypeDeriving
     NoFieldSelectors
     OverloadedRecordDot
-    ImportQualifiedPost
   ghc-options:
     -Wall
   default-language:
-    Haskell2010
+    GHC2021

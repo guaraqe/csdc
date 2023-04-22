@@ -16,6 +16,7 @@ module CSDC.SQL.Encoder
     messageStatus,
     replyType,
     replyStatus,
+    electionChoiceNullable,
     electionChoiceList,
     electionType,
     votePayload,
@@ -115,6 +116,9 @@ electionType = contramap encode text
   where
     encode SimpleMajority = "SimpleMajority"
     encode MajorityConsensus = "MajorityConsensus"
+
+electionChoiceNullable :: Params (Maybe ElectionChoice)
+electionChoiceNullable = contramap (fmap (.getElectionChoice)) textNullable
 
 electionChoiceList :: Params [ElectionChoice]
 electionChoiceList = contramap (fmap (.getElectionChoice)) textList
