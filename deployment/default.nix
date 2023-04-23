@@ -50,7 +50,7 @@ let
     ${if prepareDatabase then prepareDatabaseScript else ""}
 
     echo "Starting..."
-    /bin/csdc-server ${config}
+    /bin/csdc-server serve --config=${config}
   '';
 in
   # We are using buildImage instead of buildLayeredImage because of the

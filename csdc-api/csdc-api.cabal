@@ -36,6 +36,7 @@ common dependencies
     mtl,
     network,
     network-uri,
+    optparse-generic,
     password,
     random,
     resource-pool,
@@ -66,21 +67,13 @@ common dependencies
 common extensions
   default-extensions:
     DataKinds
-    DeriveFoldable
-    DeriveFunctor
-    DeriveGeneric
-    DeriveTraversable
     DerivingStrategies
     DerivingVia
-    GeneralizedNewtypeDeriving
-    KindSignatures
     LambdaCase
     OverloadedStrings
-    TypeOperators
     DuplicateRecordFields
     NoFieldSelectors
     OverloadedRecordDot
-    ImportQualifiedPost
 
 library
   import: dependencies, extensions
@@ -120,7 +113,7 @@ library
     -- record updates
     -fno-warn-ambiguous-fields
   default-language:
-    Haskell2010
+    GHC2021
 
 executable csdc-server
   import: dependencies, extensions
@@ -137,4 +130,4 @@ executable csdc-server
   ghc-options:
     -Wall
   default-language:
-    Haskell2010
+    GHC2021
