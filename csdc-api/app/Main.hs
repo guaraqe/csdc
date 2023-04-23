@@ -15,34 +15,41 @@ import Network.Wai.Handler.Warp (defaultSettings, runSettings, setLogger, setPor
 import Network.Wai.Logger (withStdoutLogger)
 import Network.Wai.Middleware.Cors qualified as Cors
 import Network.Wai.Middleware.Gzip (GzipFiles (..), def, gzip, gzipFiles)
+import Options.Generic
 import Servant (Application)
 import Servant.Server.Generic (genericServeTWithContext)
-import System.Environment (getArgs)
 import System.IO
 
-args :: IO FilePath
-args =
-  getArgs >>= \case
-    configPath : [] ->
-      pure configPath
-    _ ->
-      error "Usage: csdc-server CONFIG_PATH [SECRET_PATH]"
+data Commands
+  = Serve { config :: FilePath }
+  | Test { config :: FilePath }
+  deriving (Generic, Show)
+
+instance ParseRecord Commands
 
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
-  configPath <- args
-  readConfig configPath >>= \case
-    Left e ->
-      error $ "Could not parse the configuration file: " <> e
-    Right config -> do
-      putStrLn "Starting the server with the following configuration:\n"
-      showConfig config
-      putStrLn ""
-      context <- activate config
-      putStrLn "Applying migrations..."
-      migrate context
-      mainWith context
+  getRecord "csdc-server" >>= \case
+    Serve configPath ->
+      readConfig configPath >>= \case
+        Left e ->
+          error $ "Could not parse the configuration file: " <> e
+        Right config -> do
+          putStrLn "Starting the server with the following configuration:\n"
+          showConfig config
+          putStrLn ""
+          context <- activate config
+          putStrLn "Applying migrations..."
+          migrate context
+          mainWith context
+    Test configPath ->
+      readConfig configPath >>= \case
+        Left e ->
+          error $ "Could not parse the configuration file: " <> e
+        Right config -> do
+          Context {..} <- activate config
+          Action.run_ dao $ pure ()
 
 mainWith :: Context -> IO ()
 mainWith Context {..} = do

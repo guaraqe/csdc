@@ -5,7 +5,7 @@
 
 serve: ## Launch the server.
 	mkdir -p tmp
-	cabal run --ghc-options="-O0" -- csdc-server config.json
+	cabal run --ghc-options="-O0" -- csdc-server serve --config=config.json
 
 .PHONY: serve
 
