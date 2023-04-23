@@ -249,14 +249,16 @@ decodeUnitMember =
 
 type alias UnitSubpart =
   { subpartId : Id Subpart
+  , level : Int
   , unitId : Id Unit
   , unit : Unit
   }
 
 decodeUnitSubpart : Decoder UnitSubpart
 decodeUnitSubpart =
-  Decoder.map3 UnitSubpart
+  Decoder.map4 UnitSubpart
     (Decoder.field "subpartId" decodeId)
+    (Decoder.field "level" Decoder.int)
     (Decoder.field "unitId" decodeId)
     (Decoder.field "unit" decodeUnit)
 

@@ -3,6 +3,7 @@
 
 module Main where
 
+import Control.Monad.IO.Class (liftIO)
 import CSDC.API (serveAPI)
 import CSDC.API.Auth qualified as Auth
 import CSDC.Action qualified as Action
@@ -10,6 +11,7 @@ import CSDC.Config (Context (..), activate, readConfig, showConfig)
 import CSDC.Daemon qualified as Daemon
 import CSDC.Daemon.Mail qualified as Daemon.Mail
 import CSDC.SQL qualified as SQL
+import CSDC.SQL.Subparts qualified as SQL.Subparts
 import Network.Wai (Middleware)
 import Network.Wai.Handler.Warp (defaultSettings, runSettings, setLogger, setPort)
 import Network.Wai.Logger (withStdoutLogger)
@@ -22,7 +24,7 @@ import System.IO
 
 data Commands
   = Serve { config :: FilePath }
-  | Test { config :: FilePath }
+  | Test { config :: FilePath, unitId :: String }
   deriving (Generic, Show)
 
 instance ParseRecord Commands
@@ -43,13 +45,15 @@ main = do
           putStrLn "Applying migrations..."
           migrate context
           mainWith context
-    Test configPath ->
+    Test configPath unitId ->
       readConfig configPath >>= \case
         Left e ->
           error $ "Could not parse the configuration file: " <> e
         Right config -> do
           Context {..} <- activate config
-          Action.run_ dao $ pure ()
+          Action.run_ dao $ do
+            ids <- Action.runQuery SQL.Subparts.selectByExtendedParent (read unitId)
+            liftIO $ print ids
 
 mainWith :: Context -> IO ()
 mainWith Context {..} = do

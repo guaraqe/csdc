@@ -64,6 +64,7 @@ data UnitMember = UnitMember
 
 data UnitSubpart = UnitSubpart
   { subpartId :: Id Subpart,
+    level :: Int,
     unitId :: Id Unit,
     unit :: Unit
   }
