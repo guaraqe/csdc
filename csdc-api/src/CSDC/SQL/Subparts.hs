@@ -126,7 +126,7 @@ selectByExtendedParent = Statement sql encoder decoder True
             UNION
             SELECT d.id, d.parent, s.child, d.level + 1
             FROM descendants d JOIN subparts s ON d.child=s.parent
-        )
+        ) SEARCH DEPTH FIRST BY parent SET ordercol
         SELECT descendants.id, level, child, units.name, units.description, units.chair, units.image, units.created_at
         FROM descendants JOIN units ON units.id = child
         WHERE parent = $1
