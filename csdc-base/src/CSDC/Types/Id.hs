@@ -18,7 +18,7 @@ import Web.Internal.HttpApiData (FromHttpApiData (..))
 
 -- | A unique identifier for some type.
 newtype Id a = Id {getId :: UUID}
-  deriving newtype (Show, Eq, Ord, ToJSON, FromJSON)
+  deriving newtype (Show, Read, Eq, Ord, ToJSON, FromJSON)
 
 instance FromHttpApiData (Id a) where
   parseUrlPiece txt =

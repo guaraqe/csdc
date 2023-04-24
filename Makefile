@@ -9,6 +9,14 @@ serve: ## Launch the server.
 
 .PHONY: serve
 
+TEST_ARGS=
+
+serve-test: ## Launch the test script in the server app.
+	mkdir -p tmp
+	cabal run --ghc-options="-O0" -- csdc-server test --config=config.json $(TEST_ARGS)
+
+.PHONY: serve-test
+
 ################################################################################
 # GUI
 

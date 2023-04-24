@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 module CSDC.SQL.Members
@@ -8,10 +9,12 @@ module CSDC.SQL.Members
     insert,
     delete,
     deleteUnit,
+    isIndirectMember,
   )
 where
 
 import CSDC.Prelude
+import CSDC.SQL.QQ (sqlqq)
 import CSDC.SQL.Decoder qualified as Decoder
 import CSDC.SQL.Encoder qualified as Encoder
 import Data.ByteString.Char8 qualified as ByteString
@@ -108,3 +111,28 @@ deleteUnit = Statement sql encoder decoder True
 
     encoder = Encoder.id
     decoder = Decoder.noResult
+
+isIndirectMember :: Statement (Id Person,Id Unit) Bool
+isIndirectMember = Statement sql encoder decoder True
+  where
+    sql =
+      [sqlqq|
+        SELECT EXISTS (
+          WITH RECURSIVE descendants(parent, child) AS (
+              SELECT parent, child
+              FROM subparts
+              UNION
+              SELECT d.parent, s.child
+              FROM descendants d JOIN subparts s ON d.child = s.parent
+          )
+          SELECT *
+          FROM descendants JOIN members ON descendants.child = members.unit
+          WHERE descendants.parent = $2 AND members.person = $1
+        )
+      |]
+
+    encoder =
+      contramap fst Encoder.id <>
+      contramap snd Encoder.id
+
+    decoder = Decoder.singleRow Decoder.bool

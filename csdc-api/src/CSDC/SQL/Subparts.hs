@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 module CSDC.SQL.Subparts
@@ -8,12 +9,14 @@ module CSDC.SQL.Subparts
     insert,
     delete,
     deleteUnit,
+    selectByExtendedParent,
   )
 where
 
 import CSDC.Prelude
 import CSDC.SQL.Decoder qualified as Decoder
 import CSDC.SQL.Encoder qualified as Encoder
+import CSDC.SQL.QQ (sqlqq)
 import Data.ByteString.Char8 qualified as ByteString
 import Data.Functor.Contravariant (Contravariant (..))
 import Hasql.Statement (Statement (..))
@@ -33,6 +36,7 @@ selectByChild = Statement sql encoder decoder True
 
     decoder = Decoder.rowList $ do
       subpartId <- Decoder.id
+      let level = 1
       unitId <- Decoder.id
       unit <- do
         name <- Decoder.text
@@ -58,6 +62,7 @@ selectByParent = Statement sql encoder decoder True
 
     decoder = Decoder.rowList $ do
       subpartId <- Decoder.id
+      let level = 1
       unitId <- Decoder.id
       unit <- do
         name <- Decoder.text
@@ -109,3 +114,35 @@ deleteUnit = Statement sql encoder decoder True
     encoder = Encoder.id
 
     decoder = Decoder.noResult
+
+selectByExtendedParent :: Statement (Id Unit) [UnitSubpart]
+selectByExtendedParent = Statement sql encoder decoder True
+  where
+    sql =
+      [sqlqq|
+        WITH RECURSIVE descendants(id, parent, child) AS (
+            SELECT id, parent, child, 1 as level
+            FROM subparts
+            UNION
+            SELECT d.id, d.parent, s.child, d.level + 1
+            FROM descendants d JOIN subparts s ON d.child=s.parent
+        ) SEARCH DEPTH FIRST BY parent SET ordercol
+        SELECT descendants.id, level, child, units.name, units.description, units.chair, units.image, units.created_at
+        FROM descendants JOIN units ON units.id = child
+        WHERE parent = $1
+      |]
+
+    encoder = Encoder.id
+
+    decoder = Decoder.rowList $ do
+      subpartId <- Decoder.id
+      level <- Decoder.int
+      unitId <- Decoder.id
+      unit <- do
+        name <- Decoder.text
+        description <- Decoder.text
+        chairId <- Decoder.id
+        image <- Decoder.text
+        createdAt <- Decoder.posixTime
+        pure Unit {..}
+      pure UnitSubpart {..}
