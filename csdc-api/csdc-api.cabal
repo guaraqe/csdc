@@ -50,6 +50,7 @@ common dependencies
     time,
     typed-process,
     unliftio,
+    unordered-containers,
     wai,
     wai-app-static,
     wai-extra,
@@ -81,6 +82,7 @@ library
     CSDC.Action
     CSDC.Config
     CSDC.Daemon
+    CSDC.Daemon.Election
     CSDC.Daemon.Mail
     CSDC.API
     CSDC.API.Auth

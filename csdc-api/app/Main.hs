@@ -3,6 +3,7 @@
 
 module Main where
 
+import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import CSDC.API (serveAPI)
 import CSDC.API.Auth qualified as Auth
@@ -10,6 +11,7 @@ import CSDC.Action qualified as Action
 import CSDC.Config (Context (..), activate, readConfig, showConfig)
 import CSDC.Daemon qualified as Daemon
 import CSDC.Daemon.Mail qualified as Daemon.Mail
+import CSDC.Daemon.Election qualified as Daemon.Election
 import CSDC.SQL qualified as SQL
 import CSDC.SQL.Subparts qualified as SQL.Subparts
 import Network.Wai (Middleware)
@@ -58,8 +60,9 @@ main = do
 mainWith :: Context -> IO ()
 mainWith Context {..} = do
   putStrLn "Starting mail daemon..."
-  _ <- Action.run_ dao $ do
-    Daemon.launch Daemon.Mail.daemon
+  void $ Action.run_ dao $ Daemon.launch Daemon.Mail.daemon
+  putStrLn "Starting election daemon..."
+  void $ Action.run_ dao $ Daemon.launch Daemon.Election.daemon
   putStrLn "Server ready."
   withStdoutLogger $ \logger -> do
     let settings = setPort port $ setLogger logger defaultSettings

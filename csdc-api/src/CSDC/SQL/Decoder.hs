@@ -18,6 +18,7 @@ module CSDC.SQL.Decoder
     electionChoiceList,
     electionChoiceNullable,
     electionType,
+    votePayload,
 
     -- * Reexport
     Decoders.rowList,
@@ -29,7 +30,9 @@ where
 
 import CSDC.Prelude
 import CSDC.Types.Election
+import Data.Aeson qualified as JSON
 import Data.ByteString (ByteString)
+import Data.Text qualified as Text
 import Data.Time.Clock.POSIX (POSIXTime, utcTimeToPOSIXSeconds)
 import Hasql.Decoders (Row, column, listArray, nonNullable, nullable)
 import Hasql.Decoders qualified as Decoders
@@ -128,3 +131,10 @@ electionType = column (nonNullable (Decoders.enum decode))
         [ ("SimpleMajority", SimpleMajority),
           ("MajorityConsensus", MajorityConsensus)
         ]
+
+votePayload :: Row VotePayload
+votePayload = column (nonNullable (Decoders.refine fromJSON Decoders.jsonb))
+  where
+    fromJSON a = case JSON.fromJSON a of
+      JSON.Error e -> Left (Text.pack e)
+      JSON.Success s -> Right s

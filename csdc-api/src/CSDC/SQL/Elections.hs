@@ -9,6 +9,9 @@ module CSDC.SQL.Elections
     deleteElection,
     insertVoter,
     insertVote,
+    selectResolvableElections,
+    selectElectionVotes,
+    updateElectionResult,
   )
 where
 
@@ -19,6 +22,8 @@ import CSDC.SQL.QQ (sqlqq)
 import CSDC.Types.Election
 import Data.Functor.Contravariant (Contravariant (..))
 import Hasql.Statement (Statement (..))
+import Hasql.Encoders qualified as Encoders
+import Hasql.Decoders qualified as Decoders
 
 insertElection :: Statement (Id Unit, NewElection) (Id Election)
 insertElection = Statement sql encoder decoder True
@@ -134,3 +139,72 @@ insertVote = Statement sql encoder decoder True
         <> contramap snd Encoder.votePayload
 
     decoder = Decoder.singleRow Decoder.id
+
+selectResolvableElections :: Statement () [(Id Election, Election)]
+selectResolvableElections = Statement sql encoder decoder True
+  where
+    sql =
+      [sqlqq|
+        SELECT
+          id,
+          unit,
+          title,
+          description,
+          choices,
+          election_type,
+          visible_votes,
+          ending_at,
+          result,
+          result_computed_at
+        FROM elections
+        WHERE ending_at < NOW() AND result_computed_at IS NULL
+      |]
+
+    encoder = Encoders.noParams
+
+    decoder = Decoder.rowList $ do
+      electionId <- Decoder.id
+      election <- do
+        unitId <- Decoder.id
+        title <- Decoder.text
+        description <- Decoder.text
+        choices <- Decoder.electionChoiceList
+        electionType <- Decoder.electionType
+        visibleVotes <- Decoder.bool
+        endingAt <- Decoder.posixTime
+        result <- Decoder.electionChoiceNullable
+        resultComputedAt <- Decoder.posixTimeNullable
+        pure Election {..}
+      pure (electionId, election)
+
+selectElectionVotes :: Statement (Id Election) [VotePayload]
+selectElectionVotes = Statement sql encoder decoder True
+  where
+    sql =
+      [sqlqq|
+        SELECT vote
+        FROM votes
+        WHERE election = $1
+      |]
+
+    encoder = Encoder.id
+
+    decoder = Decoder.rowList Decoder.votePayload
+
+
+updateElectionResult :: Statement (Id Election, Maybe ElectionChoice) ()
+updateElectionResult = Statement sql encoder decoder True
+  where
+    sql =
+      [sqlqq|
+        UPDATE elections
+        SET result = $2, result_computed_at = NOW()
+        WHERE id = $1
+      |]
+
+    encoder =
+      contramap fst Encoder.id
+        <> contramap snd Encoder.electionChoiceNullable
+
+    decoder = Decoders.noResult
+
