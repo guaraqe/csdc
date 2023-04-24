@@ -92,3 +92,8 @@ data Voter = Voter
     voteId :: Maybe (Id Vote)
   }
   deriving (Show, Eq)
+
+--------------------------------------------------------------------------------
+-- Summary
+
+newtype ElectionSummary = ElectionSummary (HashMap ElectionChoice Double)

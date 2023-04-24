@@ -3,17 +3,17 @@
 
 module Main where
 
-import Control.Monad (void)
-import Control.Monad.IO.Class (liftIO)
 import CSDC.API (serveAPI)
 import CSDC.API.Auth qualified as Auth
 import CSDC.Action qualified as Action
 import CSDC.Config (Context (..), activate, readConfig, showConfig)
 import CSDC.Daemon qualified as Daemon
-import CSDC.Daemon.Mail qualified as Daemon.Mail
 import CSDC.Daemon.Election qualified as Daemon.Election
+import CSDC.Daemon.Mail qualified as Daemon.Mail
 import CSDC.SQL qualified as SQL
 import CSDC.SQL.Subparts qualified as SQL.Subparts
+import Control.Monad (void)
+import Control.Monad.IO.Class (liftIO)
 import Network.Wai (Middleware)
 import Network.Wai.Handler.Warp (defaultSettings, runSettings, setLogger, setPort)
 import Network.Wai.Logger (withStdoutLogger)
@@ -25,8 +25,8 @@ import Servant.Server.Generic (genericServeTWithContext)
 import System.IO
 
 data Commands
-  = Serve { config :: FilePath }
-  | Test { config :: FilePath, unitId :: String }
+  = Serve {config :: FilePath}
+  | Test {config :: FilePath, unitId :: String}
   deriving (Generic, Show)
 
 instance ParseRecord Commands

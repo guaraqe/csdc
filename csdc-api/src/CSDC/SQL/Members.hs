@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 module CSDC.SQL.Members
@@ -14,9 +14,9 @@ module CSDC.SQL.Members
 where
 
 import CSDC.Prelude
-import CSDC.SQL.QQ (sqlqq)
 import CSDC.SQL.Decoder qualified as Decoder
 import CSDC.SQL.Encoder qualified as Encoder
+import CSDC.SQL.QQ (sqlqq)
 import Data.ByteString.Char8 qualified as ByteString
 import Data.Functor.Contravariant (Contravariant (..))
 import Hasql.Statement (Statement (..))
@@ -112,7 +112,7 @@ deleteUnit = Statement sql encoder decoder True
     encoder = Encoder.id
     decoder = Decoder.noResult
 
-isIndirectMember :: Statement (Id Person,Id Unit) Bool
+isIndirectMember :: Statement (Id Person, Id Unit) Bool
 isIndirectMember = Statement sql encoder decoder True
   where
     sql =
@@ -132,7 +132,7 @@ isIndirectMember = Statement sql encoder decoder True
       |]
 
     encoder =
-      contramap fst Encoder.id <>
-      contramap snd Encoder.id
+      contramap fst Encoder.id
+        <> contramap snd Encoder.id
 
     decoder = Decoder.singleRow Decoder.bool

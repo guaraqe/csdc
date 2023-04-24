@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module CSDC.DAO where
@@ -23,6 +24,9 @@ import CSDC.Types.Election
 import CSDC.Types.File
 import Control.Monad (forM_)
 import Control.Monad.Reader (asks)
+import Data.HashMap.Strict (HashMap)
+import Data.HashMap.Strict qualified as HashMap
+import Data.Monoid (Sum (..))
 import Data.Password.Bcrypt (hashPassword, mkPassword)
 import Data.Text qualified as Text
 import Data.Time.Clock.POSIX (getPOSIXTime)
@@ -331,7 +335,7 @@ getUnitInfo uid = do
         runQuery SQL.MessageSubparts.getUnitsForMessage (userId, uid)
       let isMember = any (\m -> m.personId == userId) members
       isIndirectMember <-
-        if False --isMember
+        if False -- isMember
           then pure True
           else runQuery SQL.Members.isIndirectMember (userId, uid)
       pure $
@@ -471,6 +475,55 @@ addVote electionId payload = do
   personId <- getUser
   runQuery SQL.Elections.insertVoter (electionId, personId)
   runQuery SQL.Elections.insertVote (electionId, payload)
+
+getElectionSummary :: Id Election -> Election -> Action user ElectionSummary
+getElectionSummary electionId election = do
+  votes <- runQuery SQL.Elections.selectElectionVotes electionId
+
+  let toGradedVote :: VotePayload -> HashMap ElectionChoice (Sum Int)
+      toGradedVote vote = case election.electionType of
+        -- XXX: This is wrong, use instead Armand's software.
+        MajorityConsensus ->
+          let fromGrade = \case
+                GradeExcellent -> Sum 3
+                GradeVeryGood -> Sum 2
+                GradeGood -> Sum 1
+                GradeAcceptable -> Sum 0
+                GradeBad -> Sum (-1)
+                GradeVeryBad -> Sum (-2)
+           in case vote of
+                VotePayloadMajorityConsensus grades -> fmap fromGrade grades
+                _ -> mempty
+        SimpleMajority ->
+          let fromGrade = \case
+                Nothing -> mempty
+                Just choice -> HashMap.singleton choice (Sum 1)
+           in case vote of
+                VotePayloadSimpleMajority choice -> fromGrade choice
+                _ -> mempty
+
+      summary :: HashMap ElectionChoice (Sum Int)
+      summary = mconcat $ fmap toGradedVote votes
+
+  pure $ ElectionSummary $ fmap (fromIntegral . getSum) summary
+
+getElectionResult :: ElectionSummary -> Maybe ElectionChoice
+getElectionResult (ElectionSummary summary) =
+  let accumulate ::
+        (Double, [ElectionChoice]) ->
+        ElectionChoice ->
+        Double ->
+        (Double, [ElectionChoice])
+      accumulate (winnersGrade, winners) choice choiceGrade =
+        if
+            | winnersGrade == choiceGrade -> (winnersGrade, choice : winners)
+            | winnersGrade < choiceGrade -> (choiceGrade, [choice])
+            | otherwise -> (winnersGrade, winners)
+
+      (_, wins) = HashMap.foldlWithKey accumulate (-1000, []) summary
+   in case wins of
+        [winner] -> Just winner
+        _ -> Nothing
 
 --------------------------------------------------------------------------------
 -- Mail

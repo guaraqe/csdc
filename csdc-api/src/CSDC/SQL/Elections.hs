@@ -21,9 +21,9 @@ import CSDC.SQL.Encoder qualified as Encoder
 import CSDC.SQL.QQ (sqlqq)
 import CSDC.Types.Election
 import Data.Functor.Contravariant (Contravariant (..))
-import Hasql.Statement (Statement (..))
-import Hasql.Encoders qualified as Encoders
 import Hasql.Decoders qualified as Decoders
+import Hasql.Encoders qualified as Encoders
+import Hasql.Statement (Statement (..))
 
 insertElection :: Statement (Id Unit, NewElection) (Id Election)
 insertElection = Statement sql encoder decoder True
@@ -191,7 +191,6 @@ selectElectionVotes = Statement sql encoder decoder True
 
     decoder = Decoder.rowList Decoder.votePayload
 
-
 updateElectionResult :: Statement (Id Election, Maybe ElectionChoice) ()
 updateElectionResult = Statement sql encoder decoder True
   where
@@ -207,4 +206,3 @@ updateElectionResult = Statement sql encoder decoder True
         <> contramap snd Encoder.electionChoiceNullable
 
     decoder = Decoders.noResult
-

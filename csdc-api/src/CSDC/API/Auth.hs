@@ -37,8 +37,8 @@ import Servant.Auth.Server
     defaultCookieSettings,
     defaultJWTSettings,
     generateKey,
-    writeKey,
     readKey,
+    writeKey,
   )
 import Servant.Server.Generic (AsServerT)
 import System.Directory (doesFileExist)
