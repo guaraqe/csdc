@@ -270,6 +270,7 @@ type alias UnitInfo =
   , parents : List UnitSubpart
   , userId : Id Person
   , isMember : Bool
+  , isIndirectMember : Bool
   , isAdmin : Bool
   , isMembershipPending : Bool
   , unitsForMessage : List (WithId Unit)
@@ -285,6 +286,7 @@ decodeUnitInfo =
     |> andMap (Decoder.field "parents" (Decoder.list decodeUnitSubpart))
     |> andMap (Decoder.field "userId" decodeId)
     |> andMap (Decoder.field "isMember" Decoder.bool)
+    |> andMap (Decoder.field "isIndirectMember" Decoder.bool)
     |> andMap (Decoder.field "isAdmin" Decoder.bool)
     |> andMap (Decoder.field "isMembershipPending" Decoder.bool)
     |> andMap (Decoder.field "unitsForMessage" (Decoder.list (decodeWithId decodeUnit)))

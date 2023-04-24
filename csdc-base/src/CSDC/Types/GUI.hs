@@ -79,6 +79,7 @@ data UnitInfo = UnitInfo
     parents :: [UnitSubpart],
     userId :: Id Person,
     isMember :: Bool,
+    isIndirectMember :: Bool,
     isAdmin :: Bool,
     isMembershipPending :: Bool,
     unitsForMessage :: [WithId Unit]

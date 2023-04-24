@@ -329,6 +329,11 @@ getUnitInfo uid = do
       parents <- getUnitParents uid
       unitsForMessage <-
         runQuery SQL.MessageSubparts.getUnitsForMessage (userId, uid)
+      let isMember = any (\m -> m.personId == userId) members
+      isIndirectMember <-
+        if False --isMember
+          then pure True
+          else runQuery SQL.Members.isIndirectMember (userId, uid)
       pure $
         Just
           UnitInfo
@@ -339,7 +344,8 @@ getUnitInfo uid = do
               parents = parents,
               userId = userId,
               isAdmin = unit.chairId == userId,
-              isMember = any (\m -> m.personId == userId) members,
+              isMember = isMember,
+              isIndirectMember = isIndirectMember,
               isMembershipPending = isMembershipPending,
               unitsForMessage = unitsForMessage
             }
