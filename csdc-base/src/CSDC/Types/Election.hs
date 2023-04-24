@@ -96,4 +96,4 @@ data Voter = Voter
 --------------------------------------------------------------------------------
 -- Summary
 
-newtype ElectionSummary = ElectionSummary (HashMap ElectionChoice Double)
+newtype ElectionSummary = ElectionSummary (HashMap ElectionChoice Int)
