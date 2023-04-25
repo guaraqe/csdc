@@ -11,6 +11,7 @@ import API as API
 import UI.BoxElection as BoxElection
 import UI.Column as Column
 import UI.Modal as Modal
+import Form.UnitElections as ElectionsForm
 import Notification exposing (Notification)
 import Page as Page exposing (UnitTab (..))
 import Types exposing (..)

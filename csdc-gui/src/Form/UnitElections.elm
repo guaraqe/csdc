@@ -63,9 +63,9 @@ parse model = Result.toMaybe <|
     , description = description
     , unitId = Debug.todo "LALA"
     , choices = ["Choice 1", "Choice 2"]
-    , electionType = ["Choice 1", "Choice 2"]
-    , visibleVotes = ["true"]
-    , endingAt = ["1"]
+    , electionType = SimpleMajority
+    , visibleVotes = True
+    , endingAt = Time.millisToPosix 1
     
     }
   
@@ -75,7 +75,7 @@ parse model = Result.toMaybe <|
 
 type alias Config a =
   { pageInfo : Page.Info
-  , request : NewUnit -> Cmd (API.Response a)
+  , request : NewElection -> Cmd (API.Response a)
   , finish : a -> Cmd (Msg a)
   }
 
