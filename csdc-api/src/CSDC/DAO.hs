@@ -474,8 +474,15 @@ deleteElection electionId = do
 addVote :: Id Election -> VotePayload -> ActionAuth (Id Vote)
 addVote electionId payload = do
   personId <- getUser
-  runQuery SQL.Elections.insertVoter (electionId, personId)
-  runQuery SQL.Elections.insertVote (electionId, payload)
+  voteId <- runQuery SQL.Elections.insertVote (electionId, payload)
+  voteIdToRegister <-
+    runQuery SQL.Elections.selectElectionVisibleVotes electionId >>= \case
+      Nothing ->
+        pure Nothing
+      Just visibleVotes ->
+        pure $ if visibleVotes then Just voteId else Nothing
+  runQuery SQL.Elections.insertVoter (electionId, personId, voteIdToRegister)
+  pure voteId
 
 getElectionSummary :: Id Election -> Election -> Action user ElectionSummary
 getElectionSummary electionId election = do
