@@ -742,8 +742,8 @@ decodeElectionType =
 encodeElectionType : ElectionType -> Value
 encodeElectionType s =
   case s of
-    MajorityConsensus -> Encoder.string "Seen"
-    SimpleMajority -> Encoder.string "NotSeen"
+    MajorityConsensus -> Encoder.string "MajorityConsensus"
+    SimpleMajority -> Encoder.string "SimpleMajority"
 
 type alias ElectionChoice = String
 
@@ -794,8 +794,7 @@ decodeElectionInfo =
     |> andMap (Decoder.field "totalVotes" Decoder.int)
 
 type alias NewElection =
-    { unitId : Id Unit
-    , title : String
+    { title : String
     , description : String
     , choices : List ElectionChoice
     , electionType : ElectionType
@@ -806,8 +805,7 @@ type alias NewElection =
 encodeNewElection : NewElection -> Value
 encodeNewElection newElection =
   Encoder.object
-    [ ("unitId", encodeId newElection.unitId)
-    , ("title", Encoder.string newElection.title)
+    [ ("title", Encoder.string newElection.title)
     , ("description", Encoder.string newElection.description )
     , ( "choices", Encoder.list encodeElectionChoice newElection.choices )
     , ( "electionType", encodeElectionType  newElection.electionType )

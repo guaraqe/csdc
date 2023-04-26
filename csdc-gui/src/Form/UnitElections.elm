@@ -16,16 +16,6 @@ import Notification exposing (Notification)
 import Types exposing (..)
 import Input as Input
 import Field exposing (Field)
-import Debug
-
-
-
-
-
-
-
-
-
 
 --------------------------------------------------------------------------------
 -- Model
@@ -43,8 +33,6 @@ initial =
   , notification = Notification.Empty
   }
 
-
-
 reload : Model -> Model
 reload model =
   { model
@@ -57,18 +45,14 @@ parse : Model -> Maybe NewElection
 parse model = Result.toMaybe <|
   Field.with model.title <| \title ->
   Field.with model.description <| \description ->
- 
   Ok
     { title = title
     , description = description
-    , unitId = Debug.todo "LALA"
     , choices = ["Choice 1", "Choice 2"]
     , electionType = SimpleMajority
     , visibleVotes = True
     , endingAt = Time.millisToPosix 1
-    
     }
-  
 
 --------------------------------------------------------------------------------
 -- Update
