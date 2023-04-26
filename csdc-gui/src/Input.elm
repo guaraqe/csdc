@@ -117,6 +117,46 @@ textarea field makeMsg =
         ]
     ]
 
+checkbox : Field Bool a -> (Bool -> msg) -> String -> Html (Form.Msg msg r b)
+checkbox field makeMsg checkboxText =
+  wrapper field <|
+    Html.label
+      [ Html.Attributes.class "checkbox" ]
+      [ Html.input
+          [ case Field.status field of
+              Invalid _ -> Html.Attributes.class "checkbox is-danger"
+              _ -> Html.Attributes.class "checkbox"
+          , Html.Attributes.type_ "checkbox"
+          , Html.Attributes.checked (Field.raw field)
+          , Html.Events.onCheck (Form.ModelMsg << makeMsg)
+          ]
+          []
+      , Html.text checkboxText
+      ]
+
+radio :
+  Field (Maybe a) a ->
+  (a -> msg) ->
+  List { name : String, value : a } ->
+  Html (Form.Msg msg r b)
+radio field makeMsg choices =
+  wrapper field <|
+    Html.div [] <| List.map (\{ name, value } ->
+      Html.label
+        [ Html.Attributes.class "radio" ]
+        [ Html.input
+            [ case Field.status field of
+                Invalid _ -> Html.Attributes.class "radio is-danger"
+                _ -> Html.Attributes.class "radio"
+            , Html.Attributes.type_ "radio"
+            , Html.Attributes.checked (Field.raw field == Just value)
+            , Html.Events.onCheck (\_ -> Form.ModelMsg <| makeMsg value)
+            ]
+            []
+        , Html.text name
+        ]
+      ) choices
+
 --------------------------------------------------------------------------------
 -- Text input
 

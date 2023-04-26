@@ -11,18 +11,21 @@ import API as API
 import Form
 import Page
 import Html exposing (Html)
+import Html.Attributes
 import Time exposing ( millisToPosix)
 import Notification exposing (Notification)
 import Types exposing (..)
 import Input as Input
 import Field exposing (Field)
 
+import Debug
+
 --------------------------------------------------------------------------------
 -- Model
 
 type alias Model =
  { description : Field String String
- , electionType : Field String String
+ , electionType : Field (Maybe ElectionType) ElectionType
  , visibleVotes : Field Bool Bool
  , notification : Notification
  , title : Field String String
@@ -33,8 +36,8 @@ initial : Model
 initial =
   { title = Field.requiredString "Title"
   , description = Field.requiredString "Description"
-  , electionType = Field.requiredString "ElectionType"
-  , visibleVotes = Field.requiredBool "VisibleVotes"
+  , electionType = Field.required "Election Type"
+  , visibleVotes = Field.requiredBool "Vote Visibility" False
   , notification = Notification.Empty
   }
 
@@ -58,8 +61,8 @@ parse model = Result.toMaybe <|
     { title = title
     , description = description
     , choices = ["Choice 1", "Choice 2"]
-    , electionType = SimpleMajority
-    , visibleVotes = True
+    , electionType = electionType
+    , visibleVotes = visibleVotes
     , endingAt = Time.millisToPosix 1
     }
 
@@ -88,7 +91,7 @@ type alias Msg a = Form.Msg ModelMsg () a
 type ModelMsg
   = SetTitle String
   | SetDescription String
-  | SetElectionType String
+  | SetElectionType ElectionType
   | SetVisibleVotes Bool
 
 update : ModelMsg -> Model -> (Model, Cmd ModelMsg)
@@ -102,15 +105,14 @@ update msg model =
       ( { model | description = Field.set val model.description }
       , Cmd.none
       )
-    SetElectionType  val ->
-      ( { model | electionType = Field.set val model.electionType }
+    SetElectionType val ->
+      ( { model | electionType = Field.set (Just val) model.electionType }
       , Cmd.none
       )
-   SetVisibleVotes : Bool -> (Model, Cmd Msg)
-   SetVisibleVotes bool =
-    ( { model | visibleVotes = bool }
-    , Cmd.none
-    )
+    SetVisibleVotes val ->
+      ( { model | visibleVotes = Field.set val model.visibleVotes }
+      , Cmd.none
+      )
 
 --------------------------------------------------------------------------------
 -- View
@@ -119,7 +121,21 @@ view : Model -> List (Html (Msg a))
 view model =
   [ Input.text model.title SetTitle
   , Input.textarea model.description SetDescription
-  , Input.text model.electionType SetElectionType
-  , Input.text model.visibleVotes SetVisibleVotes
+  , Html.div
+      [ Html.Attributes.class "columns"
+      , Html.Attributes.style "height" "100%"
+      , Html.Attributes.style "margin-top" "10px"
+      ]
+      [ Html.div
+          [ Html.Attributes.class "column is-half" ]
+          [ Input.radio model.electionType SetElectionType
+              [ { name = "Simple Majority", value = SimpleMajority }
+              , { name = "Majority Consensus", value = MajorityConsensus }
+              ]
+          ]
+      , Html.div
+          [ Html.Attributes.class "column is-half" ]
+          [ Input.checkbox model.visibleVotes SetVisibleVotes "All votes are visible" ]
+      ]
   , Input.button "Save" ()
   ]

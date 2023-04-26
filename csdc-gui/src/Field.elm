@@ -14,6 +14,7 @@ module Field exposing
   , optional
   , required
   , requiredString
+  , requiredBool
   , email
   , emailList
   , password
@@ -108,6 +109,9 @@ requiredString n = make n "" <| \s ->
   if String.isEmpty s
   then Err ["This field is required."]
   else Ok s
+
+requiredBool : String -> Bool -> Field Bool Bool
+requiredBool n b = make n b <| \x -> Ok x
 
 email : String -> Field String String
 email n = make n "" <| \s ->
