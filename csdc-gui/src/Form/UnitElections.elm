@@ -103,13 +103,14 @@ update msg model =
       , Cmd.none
       )
     SetElectionType  val ->
-      ( { model | description = Field.set val model.electionType }
+      ( { model | electionType = Field.set val model.electionType }
       , Cmd.none
       )
-      SetVisibleVotes  bool ->
-      ( { model | description = Field.set val model.visibleVotes }
-      , Cmd.none
-      )
+   SetVisibleVotes : Bool -> (Model, Cmd Msg)
+   SetVisibleVotes bool =
+    ( { model | visibleVotes = bool }
+    , Cmd.none
+    )
 
 --------------------------------------------------------------------------------
 -- View
@@ -119,6 +120,6 @@ view model =
   [ Input.text model.title SetTitle
   , Input.textarea model.description SetDescription
   , Input.text model.electionType SetElectionType
-  , Input.text model.visibleVotes  SetVisibleVotes
+  , Input.text model.visibleVotes SetVisibleVotes
   , Input.button "Save" ()
   ]
