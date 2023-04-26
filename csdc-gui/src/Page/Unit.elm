@@ -22,6 +22,7 @@ import WebData exposing (WebData)
 
 import Html exposing (Html)
 import Html.Attributes
+import Time
 
 --------------------------------------------------------------------------------
 -- Model
@@ -158,8 +159,8 @@ update pageInfo msg model =
 --------------------------------------------------------------------------------
 -- View
 
-view : Model -> Page.UnitTab -> List (Html Msg)
-view model tab =
+view : Time.Zone -> Model -> Page.UnitTab -> List (Html Msg)
+view zone model tab =
   Notification.with model.notification <|
   WebData.view model.info <| \info ->
   [ Html.div
@@ -193,13 +194,13 @@ view model tab =
         UnitAdmin.view info model.unitAdmin
       Page.UnitForum mtid ->
         List.map (Html.map (UnitForumMsg mtid)) <|
-        UnitForum.view info mtid model.unitForum
+        UnitForum.view zone info mtid model.unitForum
       Page.UnitFiles ->
         List.map (Html.map UnitFilesMsg) <|
         UnitFiles.view info model.unitFiles
       Page.UnitElections ->
         List.map (Html.map UnitElectionsMsg) <|
-        UnitElections.view info model.unitElections
+        UnitElections.view zone info model.unitElections
 
   ]
 

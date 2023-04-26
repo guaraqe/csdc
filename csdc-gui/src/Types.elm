@@ -82,9 +82,6 @@ decodePosix =
     (Time.millisToPosix << floor << (*) 1000)
     Decoder.float
 
-viewPosix : Posix -> String
-viewPosix = viewPosixAt Time.utc
-
 viewPosixAt : Time.Zone -> Posix -> String
 viewPosixAt zone posix =
   let

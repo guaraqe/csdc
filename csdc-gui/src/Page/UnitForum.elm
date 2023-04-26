@@ -26,6 +26,7 @@ import Html exposing (Html)
 import Html.Attributes
 import Html.Events
 import Task
+import Time
 
 --------------------------------------------------------------------------------
 -- Model
@@ -185,8 +186,8 @@ update info selected pageInfo msg model =
 --------------------------------------------------------------------------------
 -- View
 
-view : UnitInfo -> Maybe (Id Thread) -> Model -> List (Html Msg)
-view unit selected model =
+view : Time.Zone -> UnitInfo -> Maybe (Id Thread) -> Model -> List (Html Msg)
+view zone unit selected model =
   [ Html.div
       [ Html.Attributes.class "columns"
       , Html.Attributes.style "height" "100%"
@@ -194,7 +195,7 @@ view unit selected model =
       [ Html.div
           [ Html.Attributes.class "column is-one-third" ]
           [ Column.view "Threads" [smallButton "New Thread" ThreadFormOpen] <|
-            viewThreads selected model.threads
+            viewThreads zone selected model.threads
           ]
       , Html.div
           [ Html.Attributes.class "column is-two-thirds" ]
@@ -203,7 +204,7 @@ view unit selected model =
               Html.div [] []
             else
               Column.view "Posts" [smallButton "New Post" PostFormOpen] <|
-              viewPosts model.posts
+              viewPosts zone model.posts
           ]
       ]
 
@@ -218,17 +219,17 @@ view unit selected model =
   ] ++
   Notification.view model.notification
 
-viewThreads : Maybe (Id Thread) -> List ThreadInfo -> List (Html Msg)
-viewThreads tid threads =
+viewThreads : Time.Zone -> Maybe (Id Thread) -> List ThreadInfo -> List (Html Msg)
+viewThreads zone tid threads =
   let
     toBox thread =
       Html.map SelectThread <|
-      BoxThread.view (tid == Just thread.id) thread
+      BoxThread.view zone (tid == Just thread.id) thread
   in
     List.map toBox threads
 
-viewPosts : List PostInfo -> List (Html Msg)
-viewPosts = List.map BoxPost.view
+viewPosts : Time.Zone -> List PostInfo -> List (Html Msg)
+viewPosts zone = List.map (BoxPost.view zone)
 
 smallButton : String -> msg -> Html msg
 smallButton txt msg =

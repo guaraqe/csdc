@@ -103,8 +103,8 @@ update pageInfo info msg model =
 --------------------------------------------------------------------------------
 -- View
 
-view : UnitInfo -> Model -> List (Html Msg)
-view unit model =
+view : Time.Zone -> UnitInfo -> Model -> List (Html Msg)
+view zone unit model =
   [ Html.div
       [ Html.Attributes.class "columns"
       , Html.Attributes.style "height" "100%"
@@ -116,7 +116,7 @@ view unit model =
               then [smallButton "Create Election" ElectionFormOpen]
               else []
             ) <|
-            viewElections model.elections
+            viewElections zone model.elections
           ]
       , case model.selected of
           Nothing -> Html.div [] []
@@ -128,7 +128,7 @@ view unit model =
                   [ Html.Attributes.class "column is-half" ]
                   [ Column.view electionInfo.election.title
                       [ case electionInfo.votedAt of
-                          Just time -> Html.text (viewPosixAt Time.utc time)
+                          Just time -> Html.text (viewPosixAt zone time)
                           Nothing ->
                             case electionInfo.election.resultComputedAt of
                               Nothing ->
@@ -143,7 +143,7 @@ view unit model =
                           []
                           [ Html.text <|
                               let
-                                time = viewPosixAt Time.utc electionInfo.election.endingAt
+                                time = viewPosixAt zone electionInfo.election.endingAt
                               in
                                 case electionInfo.election.resultComputedAt of
                                   Just _ -> "Closed at " ++ time
@@ -180,8 +180,8 @@ view unit model =
   ] ++
   Notification.view model.notification
 
-viewElections : List ElectionInfo -> List (Html Msg)
-viewElections = List.map (BoxElection.view Time.utc SelectElection)
+viewElections : Time.Zone -> List ElectionInfo -> List (Html Msg)
+viewElections zone = List.map (BoxElection.view zone SelectElection)
 
 smallButton : String -> Msg -> Html Msg
 smallButton text msg =

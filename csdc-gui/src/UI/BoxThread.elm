@@ -3,20 +3,21 @@ module UI.BoxThread exposing
   )
 
 import UI.BoxItem as BoxItem
-import Types exposing (Id, Thread, ThreadInfo, viewPosix)
+import Types exposing (Id, Thread, ThreadInfo, viewPosixAt)
 
 import Html exposing (Html)
 import Html.Attributes
+import Time
 
-view : Bool -> ThreadInfo -> Html (Id Thread)
-view selected thread =
+view : Time.Zone -> Bool -> ThreadInfo -> Html (Id Thread)
+view zone selected thread =
   let
     contents =
       [ Html.div
           [ Html.Attributes.class "is-flex is-justify-content-space-between"
           ]
           [ Html.strong [] [ Html.text thread.subject ]
-          , Html.text <| viewPosix thread.createdAt
+          , Html.text <| viewPosixAt zone thread.createdAt
           ]
       , Html.div
           [ Html.Attributes.class "is-flex is-justify-content-space-between"

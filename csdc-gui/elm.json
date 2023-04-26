@@ -19,6 +19,7 @@
             "elm-explorations/markdown": "1.0.0",
             "feathericons/elm-feather": "1.5.0",
             "hallelujahdrive/elm-croppie": "1.0.3",
+            "mercurymedia/elm-datetime-picker": "6.0.0",
             "rtfeldman/elm-validate": "4.0.1"
         },
         "indirect": {
@@ -32,6 +33,10 @@
             "elm/regex": "1.0.0",
             "elm/svg": "1.0.1",
             "elm/virtual-dom": "1.0.2",
+            "elm-community/html-extra": "3.4.0",
+            "elm-community/list-extra": "8.7.0",
+            "justinmimbs/date": "4.0.1",
+            "justinmimbs/time-extra": "1.1.1",
             "rtfeldman/elm-hex": "1.0.0"
         }
     },
