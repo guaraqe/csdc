@@ -21,6 +21,7 @@ import Html exposing (Html)
 import Html.Attributes
 import Html.Events
 import Time
+import Form
 
 --------------------------------------------------------------------------------
 -- Model
@@ -31,6 +32,7 @@ type alias Model =
   , voteFormOpen : Bool
   , selected : Maybe (Id Election)
   , notification : Notification
+  , electionForm : ElectionsForm.Model
   }
 
 initial : Model
@@ -100,12 +102,12 @@ update pageInfo info msg model =
       ( { model | notification = Notification.Empty }
       , Cmd.none
       )
-       
-       ElectionFormMsg electionMsg ->
+
+    ElectionFormMsg electionMsg ->
       let
         config =
           { request = API.updateUnit info.id
-          , finish = \_ -> reload
+          , finish = \_ -> onSuccess
           , pageInfo = pageInfo
           }
         (electionForm, cmd) = ElectionsForm.updateWith config electionMsg model.electionForm
@@ -190,7 +192,7 @@ view unit model =
 
   , Modal.view model.electionFormOpen ElectionFormClose <|
       Html.map ElectionFormMsg <|
-      Form.viewWith "Edit Profile" ElectionsForm.view model.ElectionForm
+      Form.viewWith "Edit Profile" ElectionsForm.view model.electionForm
 
   , Modal.view model.voteFormOpen VoteFormClose <|
       Html.text "Vote form here."
