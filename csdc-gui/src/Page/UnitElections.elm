@@ -28,16 +28,17 @@ import Form
 
 type alias Model =
   { elections : List ElectionInfo
+  , electionForm : ElectionsForm.Model
   , electionFormOpen : Bool
   , voteFormOpen : Bool
   , selected : Maybe (Id Election)
   , notification : Notification
-  , electionForm : ElectionsForm.Model
   }
 
 initial : Model
 initial =
   { elections = []
+  , electionForm = ElectionsForm.initial
   , electionFormOpen = False
   , voteFormOpen = False
   , selected = Nothing
@@ -60,11 +61,13 @@ type Msg
   | VoteFormOpen
   | VoteFormClose
   | ResetNotification
-  | ElectionFormMsg (ElectionsForm.Msg ())
+  | ElectionFormMsg (ElectionsForm.Msg (Id Election))
 
 update : Page.Info -> UnitInfo -> Msg -> Model -> (Model, Cmd Msg)
 update pageInfo info msg model =
   let
+    reload = Page.goTo pageInfo (Page.Unit Page.UnitElections info.id)
+
     onSuccess = Notification.withResponse pageInfo ResetNotification model
   in
   case msg of
@@ -106,8 +109,8 @@ update pageInfo info msg model =
     ElectionFormMsg electionMsg ->
       let
         config =
-          { request = API.updateUnit info.id
-          , finish = \_ -> onSuccess
+          { request = API.createElection info.id
+          , finish = \_ -> reload
           , pageInfo = pageInfo
           }
         (electionForm, cmd) = ElectionsForm.updateWith config electionMsg model.electionForm
@@ -122,8 +125,8 @@ update pageInfo info msg model =
 --------------------------------------------------------------------------------
 -- View
 
-view : UnitInfo -> Model -> List (Html Msg)
-view unit model =
+view : Time.Zone -> UnitInfo -> Model -> List (Html Msg)
+view zone unit model =
   [ Html.div
       [ Html.Attributes.class "columns"
       , Html.Attributes.style "height" "100%"
@@ -135,7 +138,7 @@ view unit model =
               then [smallButton "Create Election" ElectionFormOpen]
               else []
             ) <|
-            viewElections model.elections
+            viewElections zone model.elections
           ]
       , case model.selected of
           Nothing -> Html.div [] []
@@ -147,7 +150,7 @@ view unit model =
                   [ Html.Attributes.class "column is-half" ]
                   [ Column.view electionInfo.election.title
                       [ case electionInfo.votedAt of
-                          Just time -> Html.text (viewPosixAt Time.utc time)
+                          Just time -> Html.text (viewPosixAt zone time)
                           Nothing ->
                             case electionInfo.election.resultComputedAt of
                               Nothing ->
@@ -162,7 +165,7 @@ view unit model =
                           []
                           [ Html.text <|
                               let
-                                time = viewPosixAt Time.utc electionInfo.election.endingAt
+                                time = viewPosixAt zone electionInfo.election.endingAt
                               in
                                 case electionInfo.election.resultComputedAt of
                                   Just _ -> "Closed at " ++ time
@@ -192,7 +195,7 @@ view unit model =
 
   , Modal.view model.electionFormOpen ElectionFormClose <|
       Html.map ElectionFormMsg <|
-      Form.viewWith "Edit Profile" ElectionsForm.view model.electionForm
+      Form.viewWith "Create Election" ElectionsForm.view model.electionForm
 
   , Modal.view model.voteFormOpen VoteFormClose <|
       Html.text "Vote form here."
@@ -200,8 +203,8 @@ view unit model =
   ] ++
   Notification.view model.notification
 
-viewElections : List ElectionInfo -> List (Html Msg)
-viewElections = List.map (BoxElection.view Time.utc SelectElection)
+viewElections : Time.Zone -> List ElectionInfo -> List (Html Msg)
+viewElections zone = List.map (BoxElection.view zone SelectElection)
 
 smallButton : String -> Msg -> Html Msg
 smallButton text msg =
