@@ -21,15 +21,20 @@ import Field exposing (Field)
 -- Model
 
 type alias Model =
-  { title : Field String String
-  , description : Field String String
-  , notification : Notification
-  }
+ { description : Field String String
+ , electionType : Field String String
+ , visibleVotes : Field Bool Bool
+ , notification : Notification
+ , title : Field String String
+ }
+
 
 initial : Model
 initial =
   { title = Field.requiredString "Title"
   , description = Field.requiredString "Description"
+  , electionType = Field.requiredString "ElectionType"
+  , visibleVotes = Field.requiredBool "VisibleVotes"
   , notification = Notification.Empty
   }
 
@@ -38,6 +43,8 @@ reload model =
   { model
   | title = Field.reload model.title
   , description = Field.reload model.description
+  , electionType = Field.reload model.electionType
+  , visibleVotes = Field.reload model.visibleVotes
   }
 
 -- Also unit update...
@@ -45,6 +52,8 @@ parse : Model -> Maybe NewElection
 parse model = Result.toMaybe <|
   Field.with model.title <| \title ->
   Field.with model.description <| \description ->
+  Field.with model.electionType <| \electionType ->
+  Field.with model.visibleVotes <| \visibleVotes ->
   Ok
     { title = title
     , description = description
@@ -79,6 +88,8 @@ type alias Msg a = Form.Msg ModelMsg () a
 type ModelMsg
   = SetTitle String
   | SetDescription String
+  | SetElectionType String
+  | SetVisibleVotes Bool
 
 update : ModelMsg -> Model -> (Model, Cmd ModelMsg)
 update msg model =
@@ -91,6 +102,14 @@ update msg model =
       ( { model | description = Field.set val model.description }
       , Cmd.none
       )
+    SetElectionType  val ->
+      ( { model | description = Field.set val model.electionType }
+      , Cmd.none
+      )
+      SetVisibleVotes  bool ->
+      ( { model | description = Field.set val model.visibleVotes }
+      , Cmd.none
+      )
 
 --------------------------------------------------------------------------------
 -- View
@@ -99,5 +118,7 @@ view : Model -> List (Html (Msg a))
 view model =
   [ Input.text model.title SetTitle
   , Input.textarea model.description SetDescription
+  , Input.text model.electionType SetElectionType
+  , Input.text model.visibleVotes  SetVisibleVotes
   , Input.button "Save" ()
   ]
