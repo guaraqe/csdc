@@ -58,6 +58,7 @@ type Msg
   | VoteFormOpen
   | VoteFormClose
   | ResetNotification
+  | ElectionFormMsg (ElectionsForm.Msg ())
 
 update : Page.Info -> UnitInfo -> Msg -> Model -> (Model, Cmd Msg)
 update pageInfo info msg model =
@@ -99,12 +100,28 @@ update pageInfo info msg model =
       ( { model | notification = Notification.Empty }
       , Cmd.none
       )
+       
+       ElectionFormMsg electionMsg ->
+      let
+        config =
+          { request = API.updateUnit info.id
+          , finish = \_ -> reload
+          , pageInfo = pageInfo
+          }
+        (electionForm, cmd) = ElectionsForm.updateWith config electionMsg model.electionForm
+      in
+        ( { model
+          | electionForm = electionForm
+          , electionFormOpen = not (Form.isFinished electionMsg)
+          }
+        , Cmd.map ElectionFormMsg cmd
+        )
 
 --------------------------------------------------------------------------------
 -- View
 
-view : Time.Zone -> UnitInfo -> Model -> List (Html Msg)
-view zone unit model =
+view : UnitInfo -> Model -> List (Html Msg)
+view unit model =
   [ Html.div
       [ Html.Attributes.class "columns"
       , Html.Attributes.style "height" "100%"
@@ -116,7 +133,7 @@ view zone unit model =
               then [smallButton "Create Election" ElectionFormOpen]
               else []
             ) <|
-            viewElections zone model.elections
+            viewElections model.elections
           ]
       , case model.selected of
           Nothing -> Html.div [] []
@@ -128,7 +145,7 @@ view zone unit model =
                   [ Html.Attributes.class "column is-half" ]
                   [ Column.view electionInfo.election.title
                       [ case electionInfo.votedAt of
-                          Just time -> Html.text (viewPosixAt zone time)
+                          Just time -> Html.text (viewPosixAt Time.utc time)
                           Nothing ->
                             case electionInfo.election.resultComputedAt of
                               Nothing ->
@@ -143,7 +160,7 @@ view zone unit model =
                           []
                           [ Html.text <|
                               let
-                                time = viewPosixAt zone electionInfo.election.endingAt
+                                time = viewPosixAt Time.utc electionInfo.election.endingAt
                               in
                                 case electionInfo.election.resultComputedAt of
                                   Just _ -> "Closed at " ++ time
@@ -172,7 +189,8 @@ view zone unit model =
       ]
 
   , Modal.view model.electionFormOpen ElectionFormClose <|
-      Html.text "Election form here."
+      Html.map ElectionFormMsg <|
+      Form.viewWith "Edit Profile" ElectionsForm.view model.ElectionForm
 
   , Modal.view model.voteFormOpen VoteFormClose <|
       Html.text "Vote form here."
@@ -180,8 +198,8 @@ view zone unit model =
   ] ++
   Notification.view model.notification
 
-viewElections : Time.Zone -> List ElectionInfo -> List (Html Msg)
-viewElections zone = List.map (BoxElection.view zone SelectElection)
+viewElections : List ElectionInfo -> List (Html Msg)
+viewElections = List.map (BoxElection.view Time.utc SelectElection)
 
 smallButton : String -> Msg -> Html Msg
 smallButton text msg =
