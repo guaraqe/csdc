@@ -2,12 +2,14 @@ module Input exposing (..)
 
 import Field exposing (Field (..), Status (..))
 import Form
-import Types exposing (ElectionChoice, Grade (..))
+import Types exposing (ElectionChoice, Grade (..), viewPosixAt)
 
 import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
+import SingleDatePicker exposing (DatePicker)
+import Time exposing (Posix)
 
 --------------------------------------------------------------------------------
 -- Button
@@ -118,6 +120,33 @@ textarea field makeMsg =
             [ Html.text "Markdown" ]
         ]
     ]
+
+dateAndTime :
+  Field (Maybe Posix) Posix ->
+  Time.Zone ->
+  SingleDatePicker.Settings (Form.Msg msg r b) ->
+  DatePicker ->
+  msg ->
+  Html (Form.Msg msg r b)
+dateAndTime field zone settings datePicker openMsg =
+  wrapper field <|
+    Html.div [] <|
+      [ Html.button
+          [ Html.Attributes.class "button is-light is-small"
+          , Html.Attributes.style "margin-right" "5px"
+          , Html.Events.onClick (Form.ModelMsg openMsg)
+          ]
+          [ Html.text "Select"
+          ]
+      , case Field.status field of
+          Valid posix -> Html.text (viewPosixAt zone posix)
+          _ -> Html.text "Select a date."
+      , Html.div
+          [ Html.Attributes.style "z-index" "999" ]
+          [ SingleDatePicker.view settings datePicker
+          ]
+      ]
+
 
 checkbox : Field Bool a -> (Bool -> msg) -> String -> Html (Form.Msg msg r b)
 checkbox field makeMsg checkboxText =
@@ -259,7 +288,7 @@ textList fields toMsg =
                     [ Html.Attributes.class "button is-light is-small"
                     , Html.Events.onClick (Form.ModelMsg <| toMsg <| TextListRemove index)
                     ]
-                    [ Html.text "-"
+                    [ Html.text "X"
                     ]
                 ]
             ]

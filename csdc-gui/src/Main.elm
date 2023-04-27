@@ -233,7 +233,7 @@ update msg model =
 
     UnitMsg m ->
       let
-        (viewUnit, cmd) = Unit.update pageInfo m model.viewUnit
+        (viewUnit, cmd) = Unit.update model.timeZone pageInfo m model.viewUnit
       in
         ( { model | viewUnit = viewUnit }
         , Cmd.map UnitMsg cmd
@@ -253,7 +253,9 @@ update msg model =
 -- Subscriptions
 
 subscriptions : Model -> Sub Msg
-subscriptions _ = Sub.none
+subscriptions model =
+  Sub.map UnitMsg <|
+  Unit.subscriptions model.timeZone model.viewUnit
 
 --------------------------------------------------------------------------------
 -- View

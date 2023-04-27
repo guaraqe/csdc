@@ -79,7 +79,7 @@ lookupById id = lookup (\obj -> obj.id == id)
 decodePosix : Decoder Posix
 decodePosix =
   Decoder.map
-    (Time.millisToPosix << floor << (*) 1000)
+    (Time.millisToPosix << floor)
     Decoder.float
 
 viewPosixAt : Time.Zone -> Posix -> String

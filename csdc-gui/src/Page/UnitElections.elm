@@ -1,6 +1,7 @@
 module Page.UnitElections exposing
   ( Model
   , setup
+  , subscriptions
   , initial
   , Msg (..)
   , update
@@ -20,6 +21,7 @@ import Browser.Dom as Dom
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
+import Task
 import Time
 import Form
 
@@ -32,6 +34,7 @@ type alias Model =
   , electionFormOpen : Bool
   , voteFormOpen : Bool
   , selected : Maybe (Id Election)
+  , now : Time.Posix
   , notification : Notification
   }
 
@@ -42,13 +45,20 @@ initial =
   , electionFormOpen = False
   , voteFormOpen = False
   , selected = Nothing
+  , now = Time.millisToPosix 1
   , notification = Notification.Empty
   }
 
 setup : Id Unit -> Cmd Msg
 setup id = Cmd.batch
   [ Cmd.map SetElections <| API.getElections id
+  , Task.perform SetInitialTime Time.now
   ]
+
+subscriptions : Time.Zone -> Model -> Sub Msg
+subscriptions zone model =
+  Sub.map ElectionFormMsg <|
+  ElectionsForm.subscriptions zone model.electionForm
 
 --------------------------------------------------------------------------------
 -- Update
@@ -56,15 +66,16 @@ setup id = Cmd.batch
 type Msg
   = SetElections (API.Response (List ElectionInfo))
   | SelectElection (Id Election)
+  | ElectionFormMsg (ElectionsForm.Msg (Id Election))
   | ElectionFormOpen
   | ElectionFormClose
   | VoteFormOpen
   | VoteFormClose
+  | SetInitialTime Time.Posix
   | ResetNotification
-  | ElectionFormMsg (ElectionsForm.Msg (Id Election))
 
-update : Page.Info -> UnitInfo -> Msg -> Model -> (Model, Cmd Msg)
-update pageInfo info msg model =
+update : Time.Zone -> Page.Info -> UnitInfo -> Msg -> Model -> (Model, Cmd Msg)
+update zone pageInfo info msg model =
   let
     reload = Page.goTo pageInfo (Page.Unit Page.UnitElections info.id)
 
@@ -112,6 +123,8 @@ update pageInfo info msg model =
           { request = API.createElection info.id
           , finish = \_ -> reload
           , pageInfo = pageInfo
+          , zone = zone
+          , now = model.now
           }
         (electionForm, cmd) = ElectionsForm.updateWith config electionMsg model.electionForm
       in
@@ -121,6 +134,10 @@ update pageInfo info msg model =
           }
         , Cmd.map ElectionFormMsg cmd
         )
+    SetInitialTime val ->
+      ( { model | now = val }
+      , Cmd.none
+      )
 
 --------------------------------------------------------------------------------
 -- View
@@ -195,7 +212,7 @@ view zone unit model =
 
   , Modal.view model.electionFormOpen ElectionFormClose <|
       Html.map ElectionFormMsg <|
-      Form.viewWith "Create Election" ElectionsForm.view model.electionForm
+      Form.viewWith "Create Election" (ElectionsForm.view zone) model.electionForm
 
   , Modal.view model.voteFormOpen VoteFormClose <|
       Html.text "Vote form here."

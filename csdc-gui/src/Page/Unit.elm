@@ -2,6 +2,7 @@ module Page.Unit exposing
   ( Model
   , initial
   , setup
+  , subscriptions
   , changeTab
   , Msg (..)
   , update
@@ -54,6 +55,11 @@ setup id tab =
     [ Cmd.map (GetUnitInfo tab) <| API.getUnitInfo id
     ]
 
+subscriptions : Time.Zone -> Model -> Sub Msg
+subscriptions zone model =
+  Sub.map UnitElectionsMsg <|
+  UnitElections.subscriptions zone model.unitElections
+
 changeTab : Id Unit -> Page.UnitTab -> Page.UnitTab -> Cmd Msg
 changeTab id prev tab =
   case (prev, tab) of
@@ -84,8 +90,8 @@ type Msg
   | UnitElectionsMsg UnitElections.Msg
   | UnitForumMsg (Maybe (Id Thread)) UnitForum.Msg
 
-update : Page.Info -> Msg -> Model -> (Model, Cmd Msg)
-update pageInfo msg model =
+update : Time.Zone -> Page.Info -> Msg -> Model -> (Model, Cmd Msg)
+update zone pageInfo msg model =
   let
     onSuccess = Notification.withResponse pageInfo ResetNotification model
   in
@@ -116,7 +122,7 @@ update pageInfo msg model =
 
     UnitElectionsMsg umsg -> WebData.update model model.info <| \info ->
       let
-        (unitElections, cmd) = UnitElections.update pageInfo info umsg model.unitElections
+        (unitElections, cmd) = UnitElections.update zone pageInfo info umsg model.unitElections
       in
         ( { model | unitElections = unitElections }
         , Cmd.map UnitElectionsMsg cmd
