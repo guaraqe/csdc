@@ -30,6 +30,8 @@ type alias Model =
  , title : Field String String
  }
 
+choiceField : Field String String
+choiceField = Field.requiredString ""
 
 initial : Model
 initial =
@@ -37,7 +39,7 @@ initial =
   , description = Field.requiredString "Description"
   , electionType = Field.required "Election Type"
   , visibleVotes = Field.requiredBool "Vote Visibility" False
-  , choices = Field.requiredStringList 2 "Choices"
+  , choices = Field.requiredStringList "Choices" 2 choiceField
   , notification = Notification.Empty
   }
 
@@ -118,7 +120,7 @@ update msg model =
       )
     SetChoices val ->
       ( { model
-        | choices =Input.textListUpdate (Field.requiredString "") val model.choices
+        | choices =Input.textListUpdate choiceField val model.choices
         }
       , Cmd.none
       )

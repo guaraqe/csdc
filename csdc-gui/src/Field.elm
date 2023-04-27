@@ -136,8 +136,21 @@ password n = make n "" <| \s ->
   then Err ["The password must have at least 8 characters."]
   else Ok s
 
-requiredStringList : Int -> String -> Field (Dict Int (Field String a)) (List a)
-requiredStringList num n = make n Dict.empty <| \dict ->
+toDict : Int -> a -> Dict Int a
+toDict n a =
+  if n == 0
+  then
+    Dict.empty
+  else
+    let
+      indexes = List.range 1 n
+
+      pairs = List.map (\k -> (k, a)) indexes
+    in
+      Dict.fromList pairs
+
+requiredStringList : String -> Int -> Field String a -> Field (Dict Int (Field String a)) (List a)
+requiredStringList n num fld = make n (toDict num fld) <| \dict ->
   let
     toValue field =
       case status field of
