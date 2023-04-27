@@ -368,7 +368,7 @@ deleteElection = delete "election" identity
 addVote : Id Election -> VotePayload -> Cmd (Response (Id Vote))
 addVote  uid votePayload =
   Http.post
-    { url = baseUrl ++ "election/" ++ idToString uid ++ "vote/"
+    { url = baseUrl ++ "election/" ++ idToString uid ++ "/vote/"
     , body = Http.jsonBody <| encodeVotePayload votePayload
     , expect = Http.expectJson identity decodeId
     }

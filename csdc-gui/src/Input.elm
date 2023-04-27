@@ -166,7 +166,7 @@ checkbox field makeMsg checkboxText =
       ]
 
 radio :
-  Field (Maybe a) a ->
+  Field (Maybe a) x ->
   (a -> msg) ->
   List { name : String, value : a } ->
   Html (Form.Msg msg r b)

@@ -9,6 +9,7 @@ module Field exposing
   , errors
   , validate
   , with
+  , withDict
     -- Common
   , make
   , optional
@@ -85,6 +86,23 @@ validate (Field f) =
 with : Field a b -> (b -> Result (List String) c) -> Result (List String) c
 with field f =
   validate field |> Result.andThen f
+
+traverseDict : (a -> Result (List e) b) -> Dict k a -> Result (List e) (List (k,b))
+traverseDict f dict =
+  let
+    acc (k,a) (errs,sucs) =
+      case f a of
+        Err es -> (errs ++ es, sucs)
+        Ok b -> (errs, (k,b) :: sucs)
+
+    (errsFinal, sucsFinal) = List.foldl acc ([],[]) (Dict.toList dict)
+  in
+    if List.isEmpty errsFinal
+    then Ok sucsFinal
+    else Err errsFinal
+
+withDict : Dict comparable (Field a b) -> Result (List String) (Dict comparable b)
+withDict = Result.map (Dict.fromList) << traverseDict validate
 
 --------------------------------------------------------------------------------
 -- Fields
