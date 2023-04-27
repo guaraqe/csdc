@@ -18,8 +18,6 @@ import Types exposing (..)
 import Input as Input
 import Field exposing (Field)
 
-import Debug
-
 --------------------------------------------------------------------------------
 -- Model
 
@@ -27,6 +25,7 @@ type alias Model =
  { description : Field String String
  , electionType : Field (Maybe ElectionType) ElectionType
  , visibleVotes : Field Bool Bool
+ , choices : Input.TextFieldModel ElectionChoice
  , notification : Notification
  , title : Field String String
  }
@@ -38,6 +37,7 @@ initial =
   , description = Field.requiredString "Description"
   , electionType = Field.required "Election Type"
   , visibleVotes = Field.requiredBool "Vote Visibility" False
+  , choices = Field.requiredStringList 2 "Choices"
   , notification = Notification.Empty
   }
 
@@ -47,6 +47,7 @@ reload model =
   | title = Field.reload model.title
   , description = Field.reload model.description
   , electionType = Field.reload model.electionType
+  , choices = Field.reload model.choices
   , visibleVotes = Field.reload model.visibleVotes
   }
 
@@ -57,10 +58,11 @@ parse model = Result.toMaybe <|
   Field.with model.description <| \description ->
   Field.with model.electionType <| \electionType ->
   Field.with model.visibleVotes <| \visibleVotes ->
+  Field.with model.choices <| \choices ->
   Ok
     { title = title
     , description = description
-    , choices = ["Choice 1", "Choice 2"]
+    , choices = choices
     , electionType = electionType
     , visibleVotes = visibleVotes
     , endingAt = Time.millisToPosix 1
@@ -93,6 +95,7 @@ type ModelMsg
   | SetDescription String
   | SetElectionType ElectionType
   | SetVisibleVotes Bool
+  | SetChoices Input.TextListAction
 
 update : ModelMsg -> Model -> (Model, Cmd ModelMsg)
 update msg model =
@@ -111,6 +114,12 @@ update msg model =
       )
     SetVisibleVotes val ->
       ( { model | visibleVotes = Field.set val model.visibleVotes }
+      , Cmd.none
+      )
+    SetChoices val ->
+      ( { model
+        | choices =Input.textListUpdate (Field.requiredString "") val model.choices
+        }
       , Cmd.none
       )
 
@@ -137,5 +146,19 @@ view model =
           [ Html.Attributes.class "column is-half" ]
           [ Input.checkbox model.visibleVotes SetVisibleVotes "All votes are visible" ]
       ]
+  , Html.div
+      [ Html.Attributes.class "columns"
+      , Html.Attributes.style "height" "100%"
+      , Html.Attributes.style "margin-top" "10px"
+      ]
+      [ Html.div
+          [ Html.Attributes.class "column is-half" ]
+          [ Input.textList model.choices SetChoices
+          ]
+      , Html.div
+          [ Html.Attributes.class "column is-half" ]
+          [ Html.text "Date here" ]
+      ]
+
   , Input.button "Save" ()
   ]

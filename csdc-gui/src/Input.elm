@@ -207,6 +207,72 @@ grades fields makeMsg =
           ) (Dict.toList fields)
       ]
 
+type alias TextFieldModel a = Field (Dict Int (Field String a)) (List a)
+
+type TextListAction
+  = TextListAdd
+  | TextListUpdate Int String
+  | TextListRemove Int
+
+textListUpdate :
+  Field String a -> TextListAction -> TextFieldModel a -> TextFieldModel a
+textListUpdate newField action (Field field) =
+  let
+    newRaw =
+      case action of
+        TextListAdd ->
+          let
+            newIndex =
+              case List.maximum (Dict.keys field.raw) of
+                Nothing -> 0
+                Just index -> index + 1
+          in
+            Dict.insert newIndex newField field.raw
+
+        TextListUpdate index string ->
+          let
+            update m =
+              case m of
+                Nothing -> Nothing
+                Just f -> Just <| Field.set string f
+          in
+            Dict.update index update field.raw
+
+        TextListRemove index ->
+          Dict.remove index field.raw
+  in
+    Field { field | raw = newRaw }
+
+textList : TextFieldModel a -> (TextListAction -> msg) -> Html (Form.Msg msg r b)
+textList fields toMsg =
+  wrapper fields <|
+    Html.div [] <|
+      ( List.map (\(index, field) ->
+          Html.div
+            [ Html.Attributes.class "columns  is-vcentered" ]
+            [ Html.div
+                [ Html.Attributes.class "column" ]
+                [ text field (toMsg << TextListUpdate index) ]
+            , Html.div
+                [ Html.Attributes.class "column is-one-fifth" ]
+                [ Html.button
+                    [ Html.Attributes.class "button is-light is-small"
+                    , Html.Events.onClick (Form.ModelMsg <| toMsg <| TextListRemove index)
+                    ]
+                    [ Html.text "-"
+                    ]
+                ]
+            ]
+        ) (Dict.toList (Field.raw fields))
+      ) ++
+      [ Html.button
+          [ Html.Attributes.class "button is-light is-small"
+          , Html.Events.onClick (Form.ModelMsg <| toMsg TextListAdd)
+          ]
+          [ Html.text "Add"
+          ]
+      ]
+
 --------------------------------------------------------------------------------
 -- Text input
 

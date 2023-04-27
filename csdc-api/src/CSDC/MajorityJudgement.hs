@@ -16,7 +16,6 @@ import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
 import Data.Text (Text)
 import Data.Text qualified as Text
-import Debug.Trace
 import System.Process (readProcess)
 
 --------------------------------------------------------------------------------
@@ -25,7 +24,7 @@ import System.Process (readProcess)
 summarizeGrades :: [HashMap ElectionChoice Grade] -> IO (HashMap ElectionChoice Int)
 summarizeGrades votes = do
   let grades = mergeGrades votes
-  output <- readProcess "majority-judgement" [] $ traceShowId $ toInput grades
+  output <- readProcess "majority-judgement" [] $ toInput grades
   pure $ fromOutput output
 
 --------------------------------------------------------------------------------

@@ -14,6 +14,7 @@ module Field exposing
   , optional
   , required
   , requiredString
+  , requiredStringList
   , requiredBool
   , email
   , emailList
@@ -22,6 +23,7 @@ module Field exposing
 
 import Types exposing (Id (..))
 import Validate exposing (Validator)
+import Dict exposing (Dict)
 
 type Status b
   -- The field was incorrectly parsed.
@@ -134,4 +136,16 @@ password n = make n "" <| \s ->
   then Err ["The password must have at least 8 characters."]
   else Ok s
 
+requiredStringList : Int -> String -> Field (Dict Int (Field String a)) (List a)
+requiredStringList num n = make n Dict.empty <| \dict ->
+  let
+    toValue field =
+      case status field of
+        Valid a -> Just a
+        _ -> Nothing
 
+    values = List.filterMap toValue (Dict.values dict)
+  in
+    if List.length values < num
+    then Err ["At least " ++ String.fromInt num ++  " values are necessary."]
+    else Ok values
