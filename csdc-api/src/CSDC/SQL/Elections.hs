@@ -13,6 +13,7 @@ module CSDC.SQL.Elections
     selectElectionVotes,
     updateElectionResult,
     selectPendingElections,
+    selectElectionVisibleVotes,
   )
 where
 
@@ -100,6 +101,20 @@ selectElections = Statement sql encoder decoder True
       totalVotes <- Decoder.int
       pure ElectionInfo {..}
 
+selectElectionVisibleVotes :: Statement (Id Election) (Maybe Bool)
+selectElectionVisibleVotes = Statement sql encoder decoder True
+  where
+    sql =
+      [sqlqq|
+        SELECT visible_votes
+        FROM elections
+        WHERE id = $1
+      |]
+
+    encoder = Encoder.id
+
+    decoder = Decoder.rowMaybe Decoder.bool
+
 deleteElection :: Statement (Id Election) ()
 deleteElection = Statement sql encoder decoder True
   where
@@ -112,18 +127,19 @@ deleteElection = Statement sql encoder decoder True
     encoder = Encoder.id
     decoder = Decoder.noResult
 
-insertVoter :: Statement (Id Election, Id Person) ()
+insertVoter :: Statement (Id Election, Id Person, Maybe (Id Vote)) ()
 insertVoter = Statement sql encoder decoder True
   where
     sql =
       [sqlqq|
         INSERT INTO voters (election, person, vote, voted_at)
-        VALUES ($1, $2, NULL, NOW())
+        VALUES ($1, $2, $3, NOW())
       |]
 
     encoder =
-      contramap fst Encoder.id
-        <> contramap snd Encoder.id
+      contramap (\(a,_,_) -> a) Encoder.id
+        <> contramap (\(_,a,_) -> a) Encoder.id
+        <> contramap (\(_,_,a) -> a) Encoder.idNullable
 
     decoder = Decoder.noResult
 

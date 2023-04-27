@@ -25,6 +25,7 @@ common dependencies
     binary,
     base64-bytestring,
     bytestring,
+    cassava,
     directory,
     filepath,
     ghc-prim,
@@ -38,6 +39,7 @@ common dependencies
     network-uri,
     optparse-generic,
     password,
+    process,
     random,
     resource-pool,
     servant,
@@ -94,6 +96,7 @@ library
     CSDC.Mail
     CSDC.Mail.Templates
     CSDC.Mail.Templates.TH
+    CSDC.MajorityJudgement
     CSDC.SQL
     CSDC.SQL.Decoder
     CSDC.SQL.Encoder

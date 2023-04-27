@@ -8,6 +8,7 @@ import CSDC.Action
 import CSDC.Image
 import CSDC.Mail qualified as Mail
 import CSDC.Mail.Templates qualified as Mail.Templates
+import CSDC.MajorityJudgement qualified as MajorityJudgement
 import CSDC.Prelude
 import CSDC.SQL.Elections qualified as SQL.Elections
 import CSDC.SQL.Files qualified as SQL.Files
@@ -24,8 +25,8 @@ import CSDC.Types.Election
 import CSDC.Types.File
 import Control.Monad (forM_)
 import Control.Monad.Reader (asks)
-import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
+import Data.Maybe (mapMaybe)
 import Data.Monoid (Sum (..))
 import Data.Password.Bcrypt (hashPassword, mkPassword)
 import Data.Text qualified as Text
@@ -476,47 +477,46 @@ deleteElection electionId = do
 addVote :: Id Election -> VotePayload -> ActionAuth (Id Vote)
 addVote electionId payload = do
   personId <- getUser
-  runQuery SQL.Elections.insertVoter (electionId, personId)
-  runQuery SQL.Elections.insertVote (electionId, payload)
+  voteId <- runQuery SQL.Elections.insertVote (electionId, payload)
+  voteIdToRegister <-
+    runQuery SQL.Elections.selectElectionVisibleVotes electionId >>= \case
+      Nothing ->
+        pure Nothing
+      Just visibleVotes ->
+        pure $ if visibleVotes then Just voteId else Nothing
+  runQuery SQL.Elections.insertVoter (electionId, personId, voteIdToRegister)
+  pure voteId
 
 getElectionSummary :: Id Election -> Election -> Action user ElectionSummary
 getElectionSummary electionId election = do
   votes <- runQuery SQL.Elections.selectElectionVotes electionId
 
-  let toGradedVote :: VotePayload -> HashMap ElectionChoice (Sum Int)
-      toGradedVote vote = case election.electionType of
-        -- XXX: This is wrong, use instead Armand's software.
-        MajorityConsensus ->
-          let fromGrade = \case
-                GradeExcellent -> Sum 3
-                GradeVeryGood -> Sum 2
-                GradeGood -> Sum 1
-                GradeAcceptable -> Sum 0
-                GradeBad -> Sum (-1)
-                GradeVeryBad -> Sum (-2)
-           in case vote of
-                VotePayloadMajorityConsensus grades -> fmap fromGrade grades
-                _ -> mempty
-        SimpleMajority ->
-          let fromGrade = \case
-                Nothing -> mempty
-                Just choice -> HashMap.singleton choice (Sum 1)
-           in case vote of
-                VotePayloadSimpleMajority choice -> fromGrade choice
-                _ -> mempty
+  summary <- case election.electionType of
+    SimpleMajority ->
+      let fromGrade = \case
+            Nothing -> mempty
+            Just choice -> HashMap.singleton choice (Sum 1)
 
-      summary :: HashMap ElectionChoice (Sum Int)
-      summary = mconcat $ fmap toGradedVote votes
+          toGradedVote = \case
+            VotePayloadSimpleMajority choice -> fromGrade choice
+            _ -> mempty
+       in pure $ fmap getSum $ mconcat $ fmap toGradedVote votes
+    MajorityConsensus ->
+      let toGrade (VotePayloadMajorityConsensus a) = Just a
+          toGrade _ = Nothing
 
-  pure $ ElectionSummary $ fmap (fromIntegral . getSum) summary
+          grades = mapMaybe toGrade votes
+       in liftIO $ MajorityJudgement.summarizeGrades grades
+
+  pure $ ElectionSummary summary
 
 getElectionResult :: ElectionSummary -> Maybe ElectionChoice
 getElectionResult (ElectionSummary summary) =
   let accumulate ::
-        (Double, [ElectionChoice]) ->
+        (Int, [ElectionChoice]) ->
         ElectionChoice ->
-        Double ->
-        (Double, [ElectionChoice])
+        Int ->
+        (Int, [ElectionChoice])
       accumulate (winnersGrade, winners) choice choiceGrade =
         if
             | winnersGrade == choiceGrade -> (winnersGrade, choice : winners)

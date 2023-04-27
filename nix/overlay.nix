@@ -9,6 +9,24 @@ let
     sha256 = "sha256-eGZGxKU5mvzDrL2q2omIXzJjbjwvmQzh+eYukYzb3Dc=";
   };
 
+  majorityJudgementSrc = pkgs.fetchFromGitLab {
+    repo = "majorityconsensus";
+    owner = "armandguelina";
+    rev = "e7ea7b5ea59e4b41ff8aa2a82661de32d7f4cfd9";
+    sha256 = "sha256-uGmQQKcDqHV3usOKmpDLHB2GJmIpxVdJXuNI6+CE20c=";
+  };
+
+  majority-judgement = pkgs.writeShellScriptBin "majority-judgement" ''
+    tmpdir=$(mktemp -d /tmp/majority-judgement-votes.XXXXXX)
+    cd $tmpdir
+    touch input
+    while read line
+    do
+      echo "$line" >> input
+    done
+    ${pkgs.openjdk}/bin/java ${majorityJudgementSrc}/MajorityConsensus.java input 1
+  '';
+
   overrides = _: hspkgs: with pkgs.haskell.lib;
     {
       ipfs = hspkgs.callCabal2nix "ipfs" (pkgs.fetchFromGitHub {
@@ -30,4 +48,6 @@ in
         (old.overrides or (_: _: {}))
         overrides;
   });
+
+  majority-judgement = majority-judgement;
 }
