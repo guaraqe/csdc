@@ -2,7 +2,9 @@ module Input exposing (..)
 
 import Field exposing (Field (..), Status (..))
 import Form
+import Types exposing (ElectionChoice, Grade (..))
 
+import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
@@ -156,6 +158,54 @@ radio field makeMsg choices =
         , Html.text name
         ]
       ) choices
+
+grades :
+  Dict ElectionChoice (Field (Maybe Grade) (Maybe Grade)) ->
+  (ElectionChoice -> Grade -> msg) ->
+  Html (Form.Msg msg r b)
+grades fields makeMsg =
+    Html.table
+      [ Html.Attributes.class "table is-narrow" ]
+      [ Html.thead []
+          [ Html.tr
+              [ Html.Attributes.style "white-space" "nowrap"
+              ]
+              [ Html.th [] [ Html.text "Candidates" ]
+              , Html.th [] [ Html.text "Reject" ]
+              , Html.th [] [ Html.text "Poor" ]
+              , Html.th [] [ Html.text "Acceptable" ]
+              , Html.th [] [ Html.text "Good" ]
+              , Html.th [] [ Html.text "Very Good" ]
+              , Html.th [] [ Html.text "Excellent" ]
+              ]
+          ]
+      , Html.tbody [] <|
+          List.map (\(choice, field) ->
+            Html.tr [] <|
+              [ Html.th [] [ Html.text choice ] ] ++
+              List.map (\grade ->
+                Html.td
+                  [ Html.Attributes.style "text-align" "center"
+                  ]
+                  [ Html.input
+                      [ case Field.status field of
+                          Invalid _ -> Html.Attributes.class "radio is-danger"
+                          _ -> Html.Attributes.class "radio"
+                      , Html.Attributes.type_ "radio"
+                      , Html.Attributes.checked (Field.raw field == Just grade)
+                      , Html.Events.onCheck (\_ -> Form.ModelMsg <| makeMsg choice grade)
+                      ]
+                      []
+                  ]
+              ) [ GradeVeryBad
+                , GradeBad
+                , GradeAcceptable
+                , GradeGood
+                , GradeVeryGood
+                , GradeExcellent
+                ]
+          ) (Dict.toList fields)
+      ]
 
 --------------------------------------------------------------------------------
 -- Text input
