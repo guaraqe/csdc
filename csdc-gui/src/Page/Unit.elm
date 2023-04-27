@@ -2,6 +2,7 @@ module Page.Unit exposing
   ( Model
   , initial
   , setup
+  , subscriptions
   , changeTab
   , Msg (..)
   , update
@@ -15,12 +16,14 @@ import Page as Page
 import Types exposing (..)
 import Page.UnitInfo as UnitInfo
 import Page.UnitAdmin as UnitAdmin
+import Page.UnitElections as UnitElections
 import Page.UnitFiles as UnitFiles
 import Page.UnitForum as UnitForum
 import WebData exposing (WebData)
 
 import Html exposing (Html)
 import Html.Attributes
+import Time
 
 --------------------------------------------------------------------------------
 -- Model
@@ -30,6 +33,7 @@ type alias Model =
   , unitInfo : UnitInfo.Model
   , unitAdmin : UnitAdmin.Model
   , unitFiles : UnitFiles.Model
+  , unitElections : UnitElections.Model
   , unitForum : UnitForum.Model
   , notification : Notification
   }
@@ -40,6 +44,7 @@ initial =
   , unitInfo = UnitInfo.initial
   , unitAdmin = UnitAdmin.initial
   , unitFiles = UnitFiles.initial
+  , unitElections = UnitElections.initial
   , unitForum = UnitForum.initial
   , notification = Notification.Empty
   }
@@ -49,6 +54,11 @@ setup id tab =
   Cmd.batch
     [ Cmd.map (GetUnitInfo tab) <| API.getUnitInfo id
     ]
+
+subscriptions : Time.Zone -> Model -> Sub Msg
+subscriptions zone model =
+  Sub.map UnitElectionsMsg <|
+  UnitElections.subscriptions zone model.unitElections
 
 changeTab : Id Unit -> Page.UnitTab -> Page.UnitTab -> Cmd Msg
 changeTab id prev tab =
@@ -65,6 +75,7 @@ setupTab id tab =
     Page.UnitAdmin -> Cmd.map UnitAdminMsg <| UnitAdmin.setup id
     Page.UnitFiles -> Cmd.map UnitFilesMsg <| UnitFiles.setup id
     Page.UnitForum mtid -> Cmd.map (UnitForumMsg mtid) <| UnitForum.setup id mtid
+    Page.UnitElections -> Cmd.map UnitElectionsMsg <| UnitElections.setup id
 
 --------------------------------------------------------------------------------
 -- Update
@@ -76,10 +87,11 @@ type Msg
   | UnitInfoMsg UnitInfo.Msg
   | UnitAdminMsg UnitAdmin.Msg
   | UnitFilesMsg UnitFiles.Msg
+  | UnitElectionsMsg UnitElections.Msg
   | UnitForumMsg (Maybe (Id Thread)) UnitForum.Msg
 
-update : Page.Info -> Msg -> Model -> (Model, Cmd Msg)
-update pageInfo msg model =
+update : Time.Zone -> Page.Info -> Msg -> Model -> (Model, Cmd Msg)
+update zone pageInfo msg model =
   let
     onSuccess = Notification.withResponse pageInfo ResetNotification model
   in
@@ -106,6 +118,14 @@ update pageInfo msg model =
       in
         ( { model | unitFiles = unitFiles }
         , Cmd.map UnitFilesMsg cmd
+        )
+
+    UnitElectionsMsg umsg -> WebData.update model model.info <| \info ->
+      let
+        (unitElections, cmd) = UnitElections.update zone pageInfo info umsg model.unitElections
+      in
+        ( { model | unitElections = unitElections }
+        , Cmd.map UnitElectionsMsg cmd
         )
 
     UnitForumMsg mtid umsg -> WebData.update model model.info <| \info ->
@@ -145,8 +165,8 @@ update pageInfo msg model =
 --------------------------------------------------------------------------------
 -- View
 
-view : Model -> Page.UnitTab -> List (Html Msg)
-view model tab =
+view : Time.Zone -> Model -> Page.UnitTab -> List (Html Msg)
+view zone model tab =
   Notification.with model.notification <|
   WebData.view model.info <| \info ->
   [ Html.div
@@ -160,6 +180,7 @@ view model tab =
             then
               [ (Page.UnitInfo, "Information")
               , (Page.UnitForum Nothing, "Forum")
+              , (Page.UnitElections, "Elections (" ++ String.fromInt info.electionsPending ++ ")")
               , (Page.UnitFiles, "Files")
               ]
             else []
@@ -179,10 +200,14 @@ view model tab =
         UnitAdmin.view info model.unitAdmin
       Page.UnitForum mtid ->
         List.map (Html.map (UnitForumMsg mtid)) <|
-        UnitForum.view info mtid model.unitForum
+        UnitForum.view zone info mtid model.unitForum
       Page.UnitFiles ->
         List.map (Html.map UnitFilesMsg) <|
         UnitFiles.view info model.unitFiles
+      Page.UnitElections ->
+        List.map (Html.map UnitElectionsMsg) <|
+        UnitElections.view zone info model.unitElections
+
   ]
 
 sameTab : Page.UnitTab -> Page.UnitTab -> Bool

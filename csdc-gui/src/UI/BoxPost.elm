@@ -2,14 +2,15 @@ module UI.BoxPost exposing
   ( view
   )
 
-import Types exposing (PostInfo, filePath, viewPosix)
+import Types exposing (PostInfo, filePath, viewPosixAt)
 
 import Html exposing (Html)
 import Html.Attributes
 import Markdown
+import Time
 
-view : PostInfo -> Html msg
-view post =
+view : Time.Zone -> PostInfo -> Html msg
+view zone post =
   Html.div
     [ Html.Attributes.class "box option-box has-background-white-ter is-shadowless"
     , Html.Attributes.style "margin-bottom" "1.0em"
@@ -36,7 +37,7 @@ view post =
             ]
             [ Html.strong [] [ Html.text post.authorName ]
             , Html.br [] []
-            , Html.text <| viewPosix post.createdAt
+            , Html.text <| viewPosixAt zone post.createdAt
             ]
         ]
     , Markdown.toHtml [] post.text

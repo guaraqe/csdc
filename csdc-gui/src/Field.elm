@@ -14,6 +14,8 @@ module Field exposing
   , optional
   , required
   , requiredString
+  , requiredStringList
+  , requiredBool
   , email
   , emailList
   , password
@@ -21,6 +23,7 @@ module Field exposing
 
 import Types exposing (Id (..))
 import Validate exposing (Validator)
+import Dict exposing (Dict)
 
 type Status b
   -- The field was incorrectly parsed.
@@ -109,6 +112,9 @@ requiredString n = make n "" <| \s ->
   then Err ["This field is required."]
   else Ok s
 
+requiredBool : String -> Bool -> Field Bool Bool
+requiredBool n b = make n b <| \x -> Ok x
+
 email : String -> Field String String
 email n = make n "" <| \s ->
   if Validate.isValidEmail s
@@ -130,4 +136,29 @@ password n = make n "" <| \s ->
   then Err ["The password must have at least 8 characters."]
   else Ok s
 
+toDict : Int -> a -> Dict Int a
+toDict n a =
+  if n == 0
+  then
+    Dict.empty
+  else
+    let
+      indexes = List.range 1 n
 
+      pairs = List.map (\k -> (k, a)) indexes
+    in
+      Dict.fromList pairs
+
+requiredStringList : String -> Int -> Field String a -> Field (Dict Int (Field String a)) (List a)
+requiredStringList n num fld = make n (toDict num fld) <| \dict ->
+  let
+    toValue field =
+      case status field of
+        Valid a -> Just a
+        _ -> Nothing
+
+    values = List.filterMap toValue (Dict.values dict)
+  in
+    if List.length values < num
+    then Err ["At least " ++ String.fromInt num ++  " values are necessary."]
+    else Ok values

@@ -2,10 +2,14 @@ module Input exposing (..)
 
 import Field exposing (Field (..), Status (..))
 import Form
+import Types exposing (ElectionChoice, Grade (..), viewPosixAt)
 
+import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes
 import Html.Events
+import SingleDatePicker exposing (DatePicker)
+import Time exposing (Posix)
 
 --------------------------------------------------------------------------------
 -- Button
@@ -116,6 +120,187 @@ textarea field makeMsg =
             [ Html.text "Markdown" ]
         ]
     ]
+
+dateAndTime :
+  Field (Maybe Posix) Posix ->
+  Time.Zone ->
+  SingleDatePicker.Settings (Form.Msg msg r b) ->
+  DatePicker ->
+  msg ->
+  Html (Form.Msg msg r b)
+dateAndTime field zone settings datePicker openMsg =
+  wrapper field <|
+    Html.div [] <|
+      [ Html.button
+          [ Html.Attributes.class "button is-light is-small"
+          , Html.Attributes.style "margin-right" "5px"
+          , Html.Events.onClick (Form.ModelMsg openMsg)
+          ]
+          [ Html.text "Select"
+          ]
+      , case Field.status field of
+          Valid posix -> Html.text (viewPosixAt zone posix)
+          _ -> Html.text "Select a date."
+      , Html.div
+          [ Html.Attributes.style "z-index" "999" ]
+          [ SingleDatePicker.view settings datePicker
+          ]
+      ]
+
+
+checkbox : Field Bool a -> (Bool -> msg) -> String -> Html (Form.Msg msg r b)
+checkbox field makeMsg checkboxText =
+  wrapper field <|
+    Html.label
+      [ Html.Attributes.class "checkbox" ]
+      [ Html.input
+          [ case Field.status field of
+              Invalid _ -> Html.Attributes.class "checkbox is-danger"
+              _ -> Html.Attributes.class "checkbox"
+          , Html.Attributes.type_ "checkbox"
+          , Html.Attributes.checked (Field.raw field)
+          , Html.Events.onCheck (Form.ModelMsg << makeMsg)
+          ]
+          []
+      , Html.text checkboxText
+      ]
+
+radio :
+  Field (Maybe a) a ->
+  (a -> msg) ->
+  List { name : String, value : a } ->
+  Html (Form.Msg msg r b)
+radio field makeMsg choices =
+  wrapper field <|
+    Html.div [] <| List.map (\{ name, value } ->
+      Html.label
+        [ Html.Attributes.class "radio" ]
+        [ Html.input
+            [ case Field.status field of
+                Invalid _ -> Html.Attributes.class "radio is-danger"
+                _ -> Html.Attributes.class "radio"
+            , Html.Attributes.type_ "radio"
+            , Html.Attributes.checked (Field.raw field == Just value)
+            , Html.Events.onCheck (\_ -> Form.ModelMsg <| makeMsg value)
+            ]
+            []
+        , Html.text name
+        ]
+      ) choices
+
+grades :
+  Dict ElectionChoice (Field (Maybe Grade) (Maybe Grade)) ->
+  (ElectionChoice -> Grade -> msg) ->
+  Html (Form.Msg msg r b)
+grades fields makeMsg =
+    Html.table
+      [ Html.Attributes.class "table is-narrow" ]
+      [ Html.thead []
+          [ Html.tr
+              [ Html.Attributes.style "white-space" "nowrap"
+              ]
+              [ Html.th [] [ Html.text "Candidates" ]
+              , Html.th [] [ Html.text "Reject" ]
+              , Html.th [] [ Html.text "Poor" ]
+              , Html.th [] [ Html.text "Acceptable" ]
+              , Html.th [] [ Html.text "Good" ]
+              , Html.th [] [ Html.text "Very Good" ]
+              , Html.th [] [ Html.text "Excellent" ]
+              ]
+          ]
+      , Html.tbody [] <|
+          List.map (\(choice, field) ->
+            Html.tr [] <|
+              [ Html.th [] [ Html.text choice ] ] ++
+              List.map (\grade ->
+                Html.td
+                  [ Html.Attributes.style "text-align" "center"
+                  ]
+                  [ Html.input
+                      [ case Field.status field of
+                          Invalid _ -> Html.Attributes.class "radio is-danger"
+                          _ -> Html.Attributes.class "radio"
+                      , Html.Attributes.type_ "radio"
+                      , Html.Attributes.checked (Field.raw field == Just grade)
+                      , Html.Events.onCheck (\_ -> Form.ModelMsg <| makeMsg choice grade)
+                      ]
+                      []
+                  ]
+              ) [ GradeVeryBad
+                , GradeBad
+                , GradeAcceptable
+                , GradeGood
+                , GradeVeryGood
+                , GradeExcellent
+                ]
+          ) (Dict.toList fields)
+      ]
+
+type alias TextFieldModel a = Field (Dict Int (Field String a)) (List a)
+
+type TextListAction
+  = TextListAdd
+  | TextListUpdate Int String
+  | TextListRemove Int
+
+textListUpdate :
+  Field String a -> TextListAction -> TextFieldModel a -> TextFieldModel a
+textListUpdate newField action (Field field) =
+  let
+    newRaw =
+      case action of
+        TextListAdd ->
+          let
+            newIndex =
+              case List.maximum (Dict.keys field.raw) of
+                Nothing -> 0
+                Just index -> index + 1
+          in
+            Dict.insert newIndex newField field.raw
+
+        TextListUpdate index string ->
+          let
+            update m =
+              case m of
+                Nothing -> Nothing
+                Just f -> Just <| Field.set string f
+          in
+            Dict.update index update field.raw
+
+        TextListRemove index ->
+          Dict.remove index field.raw
+  in
+    Field { field | raw = newRaw }
+
+textList : TextFieldModel a -> (TextListAction -> msg) -> Html (Form.Msg msg r b)
+textList fields toMsg =
+  wrapper fields <|
+    Html.div [] <|
+      ( List.map (\(index, field) ->
+          Html.div
+            [ Html.Attributes.class "columns  is-vcentered" ]
+            [ Html.div
+                [ Html.Attributes.class "column" ]
+                [ text field (toMsg << TextListUpdate index) ]
+            , Html.div
+                [ Html.Attributes.class "column is-one-fifth" ]
+                [ Html.button
+                    [ Html.Attributes.class "button is-light is-small"
+                    , Html.Events.onClick (Form.ModelMsg <| toMsg <| TextListRemove index)
+                    ]
+                    [ Html.text "X"
+                    ]
+                ]
+            ]
+        ) (Dict.toList (Field.raw fields))
+      ) ++
+      [ Html.button
+          [ Html.Attributes.class "button is-light is-small"
+          , Html.Events.onClick (Form.ModelMsg <| toMsg TextListAdd)
+          ]
+          [ Html.text "Add"
+          ]
+      ]
 
 --------------------------------------------------------------------------------
 -- Text input

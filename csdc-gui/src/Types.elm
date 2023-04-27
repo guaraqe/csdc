@@ -79,11 +79,8 @@ lookupById id = lookup (\obj -> obj.id == id)
 decodePosix : Decoder Posix
 decodePosix =
   Decoder.map
-    (Time.millisToPosix << floor << (*) 1000)
+    (Time.millisToPosix << floor)
     Decoder.float
-
-viewPosix : Posix -> String
-viewPosix = viewPosixAt Time.utc
 
 viewPosixAt : Time.Zone -> Posix -> String
 viewPosixAt zone posix =
@@ -273,6 +270,7 @@ type alias UnitInfo =
   , isIndirectMember : Bool
   , isAdmin : Bool
   , isMembershipPending : Bool
+  , electionsPending : Int
   , unitsForMessage : List (WithId Unit)
   }
 
@@ -289,6 +287,7 @@ decodeUnitInfo =
     |> andMap (Decoder.field "isIndirectMember" Decoder.bool)
     |> andMap (Decoder.field "isAdmin" Decoder.bool)
     |> andMap (Decoder.field "isMembershipPending" Decoder.bool)
+    |> andMap (Decoder.field "electionsPending" Decoder.int)
     |> andMap (Decoder.field "unitsForMessage" (Decoder.list (decodeWithId decodeUnit)))
 
 andMap : Decoder a -> Decoder (a -> b) -> Decoder b
@@ -743,8 +742,8 @@ decodeElectionType =
 encodeElectionType : ElectionType -> Value
 encodeElectionType s =
   case s of
-    MajorityConsensus -> Encoder.string "Seen"
-    SimpleMajority -> Encoder.string "NotSeen"
+    MajorityConsensus -> Encoder.string "MajorityConsensus"
+    SimpleMajority -> Encoder.string "SimpleMajority"
 
 type alias ElectionChoice = String
 
@@ -783,6 +782,7 @@ type alias ElectionInfo =
   { electionId : Id Election
   , election : Election
   , votedAt : Maybe Posix
+  , totalVotes : Int
   }
 
 decodeElectionInfo : Decoder ElectionInfo
@@ -791,10 +791,10 @@ decodeElectionInfo =
     |> andMap (Decoder.field "electionId" decodeId)
     |> andMap (Decoder.field "election" decodeElection)
     |> andMap (Decoder.field "votedAt" (Decoder.nullable decodePosix))
+    |> andMap (Decoder.field "totalVotes" Decoder.int)
 
 type alias NewElection =
-    { unitId : Id Unit
-    , title : String
+    { title : String
     , description : String
     , choices : List ElectionChoice
     , electionType : ElectionType
@@ -805,8 +805,7 @@ type alias NewElection =
 encodeNewElection : NewElection -> Value
 encodeNewElection newElection =
   Encoder.object
-    [ ("unitId", encodeId newElection.unitId)
-    , ("title", Encoder.string newElection.title)
+    [ ("title", Encoder.string newElection.title)
     , ("description", Encoder.string newElection.description )
     , ( "choices", Encoder.list encodeElectionChoice newElection.choices )
     , ( "electionType", encodeElectionType  newElection.electionType )

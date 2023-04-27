@@ -20,6 +20,8 @@ import Html exposing (Html)
 import Html.Attributes
 import List
 import Url
+import Task
+import Time
 
 --------------------------------------------------------------------------------
 -- Main
@@ -43,6 +45,7 @@ type alias Model =
   , url: Url.Url
   , page : Page
   , isLogged : Bool
+  , timeZone : Time.Zone
   , viewPerson : Person.Model
   , viewUnit : Unit.Model
   , signin : SignIn.Model
@@ -60,6 +63,7 @@ init _ url key =
     ( { key = key
       , url = url
       , page = page
+      , timeZone = Time.utc
       , isLogged = False
       , signin = SignIn.initial
       , explorer = Explorer.initial
@@ -72,6 +76,7 @@ init _ url key =
     , Cmd.batch
         [ cmd
         , Cmd.map SignInCheck API.getUserInfo
+        , Task.perform SetTimeZone Time.here
         ]
     )
 
@@ -92,6 +97,7 @@ type Msg
   | UnitMsg Unit.Msg
   | StudioMsg Studio.Msg
   | SearchMsg Search.Msg
+  | SetTimeZone Time.Zone
 
 routeCmd : Page -> Page -> Cmd Msg
 routeCmd prev page =
@@ -227,7 +233,7 @@ update msg model =
 
     UnitMsg m ->
       let
-        (viewUnit, cmd) = Unit.update pageInfo m model.viewUnit
+        (viewUnit, cmd) = Unit.update model.timeZone pageInfo m model.viewUnit
       in
         ( { model | viewUnit = viewUnit }
         , Cmd.map UnitMsg cmd
@@ -241,11 +247,15 @@ update msg model =
         , Cmd.map SearchMsg cmd
         )
 
+    SetTimeZone timeZone -> ( { model | timeZone = timeZone }, Cmd.none )
+
 --------------------------------------------------------------------------------
 -- Subscriptions
 
 subscriptions : Model -> Sub Msg
-subscriptions _ = Sub.none
+subscriptions model =
+  Sub.map UnitMsg <|
+  Unit.subscriptions model.timeZone model.viewUnit
 
 --------------------------------------------------------------------------------
 -- View
@@ -313,4 +323,4 @@ viewMain model =
 
     Page.Unit tab _ ->
       List.map (Html.map UnitMsg) <|
-      Unit.view model.viewUnit tab
+      Unit.view model.timeZone model.viewUnit tab
