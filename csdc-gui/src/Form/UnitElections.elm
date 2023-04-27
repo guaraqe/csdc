@@ -21,8 +21,6 @@ import Field exposing (Field)
 import SingleDatePicker exposing (DatePicker)
 import Task
 
-import Debug
-
 --------------------------------------------------------------------------------
 -- Model
 
@@ -159,7 +157,7 @@ update zone now msg model =
                  Just t -> viewPosixAt zone t
       in
       ( { model
-        | datePicker = Debug.log s datePicker
+        | datePicker = datePicker
         , endingAt = case mposix of
             Nothing -> model.endingAt
             Just _ -> Field.set mposix model.endingAt
