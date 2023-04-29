@@ -23,7 +23,13 @@ view zone toMsg electionInfo =
               [ Html.div [] [ Html.strong [] [ Html.text electionInfo.election.title ] ]
               , Html.div []
                 [ Html.text <|
-                    "Until " ++ viewPosixAt zone electionInfo.election.endingAt ++ "."
+                    case electionInfo.election.resultComputedAt of
+                      Nothing ->
+                       "Until " ++ viewPosixAt zone electionInfo.election.endingAt ++ "."
+                      Just _ ->
+                        case electionInfo.election.result of
+                          Nothing -> "The election had no winner."
+                          Just choice -> "Winner: " ++ choice ++ "."
                 ]
               ]
           , Html.div

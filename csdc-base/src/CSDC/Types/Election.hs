@@ -98,3 +98,4 @@ data Voter = Voter
 -- Summary
 
 newtype ElectionSummary = ElectionSummary (HashMap ElectionChoice Int)
+  deriving newtype (Show)

@@ -79,7 +79,7 @@ lookupById id = lookup (\obj -> obj.id == id)
 decodePosix : Decoder Posix
 decodePosix =
   Decoder.map
-    (Time.millisToPosix << floor)
+    (Time.millisToPosix << floor << (*) 1000)
     Decoder.float
 
 viewPosixAt : Time.Zone -> Posix -> String
@@ -802,6 +802,13 @@ type alias NewElection =
     , endingAt : Posix
     }
 
+encodePosix : Posix -> Value
+encodePosix t =
+  let
+    f = toFloat (Time.posixToMillis t) / 1000
+  in
+    Encoder.float f
+
 encodeNewElection : NewElection -> Value
 encodeNewElection newElection =
   Encoder.object
@@ -810,7 +817,7 @@ encodeNewElection newElection =
     , ( "choices", Encoder.list encodeElectionChoice newElection.choices )
     , ( "electionType", encodeElectionType  newElection.electionType )
     , ( "visibleVotes", Encoder.bool newElection.visibleVotes )
-    , ( "endingAt", Encoder.int <| Time.posixToMillis newElection.endingAt )
+    , ( "endingAt", encodePosix newElection.endingAt)
     ]
 
 --------------------------------------------------------------------------------
