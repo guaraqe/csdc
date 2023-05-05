@@ -24,7 +24,7 @@ import System.Process (readProcess)
 summarizeGrades :: [HashMap ElectionChoice Grade] -> IO (HashMap ElectionChoice Int)
 summarizeGrades votes = do
   let grades = mergeGrades votes
-  output <- readProcess "majority-judgement" [] $ toInput grades
+  output <- readProcess "majority-consensus" [] $ toInput grades
   pure $ fromOutput output
 
 --------------------------------------------------------------------------------

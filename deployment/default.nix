@@ -7,6 +7,7 @@ let
   secrets = pkgs.lib.importJSON ../secrets.json;
 
   server = haskell.lib.justStaticExecutables packages.csdc-api;
+  majority-consensus = pkgs.majority-consensus;
   gui = packages.csdc-gui;
 
   # Server configuration.
@@ -50,7 +51,8 @@ let
     ${if prepareDatabase then prepareDatabaseScript else ""}
 
     echo "Starting..."
-    /bin/csdc-server serve --config=${config}
+    PATH=/bin:$PATH
+    csdc-server serve --config=${config}
   '';
 in
   # We are using buildImage instead of buildLayeredImage because of the
@@ -60,8 +62,9 @@ in
   dockerTools.buildImage {
     name = "csdc-dao";
     tag = "latest";
-    contents = [
+    copyToRoot = [
       server
+      majority-consensus
       busybox
       bashInteractive
     ];

@@ -44,8 +44,8 @@ let
             flyctl
             # IPFS
             ipfs
-            # Majority Judgement
-            majority-judgement
+            # Majority Consensus
+            majority-consensus
           ];
       };
 in

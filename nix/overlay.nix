@@ -9,22 +9,34 @@ let
     sha256 = "sha256-eGZGxKU5mvzDrL2q2omIXzJjbjwvmQzh+eYukYzb3Dc=";
   };
 
-  majorityJudgementSrc = pkgs.fetchFromGitLab {
+  majority-consensus-src = pkgs.fetchFromGitLab {
     repo = "majorityconsensus";
     owner = "armandguelina";
     rev = "e7ea7b5ea59e4b41ff8aa2a82661de32d7f4cfd9";
     sha256 = "sha256-uGmQQKcDqHV3usOKmpDLHB2GJmIpxVdJXuNI6+CE20c=";
   };
 
-  majority-judgement = pkgs.writeShellScriptBin "majority-judgement" ''
-    tmpdir=$(mktemp -d /tmp/majority-judgement-votes.XXXXXX)
+  majority-consensus-class = pkgs.stdenv.mkDerivation {
+    name = "libfoo";
+    src = majority-consensus-src;
+    buildPhase = ''
+      ${pkgs.openjdk}/bin/javac MajorityConsensus.java
+    '';
+    installPhase = ''
+      mkdir -p $out
+      cp *.class $out
+    '';
+  };
+
+  majority-consensus = pkgs.writeShellScriptBin "majority-consensus" ''
+    tmpdir=$(mktemp -d /tmp/majority-consensus-votes.XXXXXX)
     cd $tmpdir
     touch input
     while read line
     do
       echo "$line" >> input
     done
-    ${pkgs.openjdk}/bin/java ${majorityJudgementSrc}/MajorityConsensus.java input 1
+    ${pkgs.openjdk}/bin/java -cp ${majority-consensus-class} MajorityConsensus input 1
   '';
 
   overrides = _: hspkgs: with pkgs.haskell.lib;
@@ -49,5 +61,5 @@ in
         overrides;
   });
 
-  majority-judgement = majority-judgement;
+  majority-consensus = majority-consensus;
 }
