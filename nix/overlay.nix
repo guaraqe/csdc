@@ -36,7 +36,7 @@ let
     do
       echo "$line" >> input
     done
-    ${pkgs.openjdk}/bin/java -cp ${majority-consensus-class} MajorityConsensus input 1
+    ${pkgs.jre_minimal}/bin/java -cp ${majority-consensus-class} MajorityConsensus input 1
   '';
 
   overrides = _: hspkgs: with pkgs.haskell.lib;
