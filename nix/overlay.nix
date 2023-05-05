@@ -16,6 +16,10 @@ let
     sha256 = "sha256-uGmQQKcDqHV3usOKmpDLHB2GJmIpxVdJXuNI6+CE20c=";
   };
 
+  jre_minimal = pkgs.jre_minimal.override {
+    jdk = pkgs.jdk_headless;
+  };
+
   majority-consensus-class = pkgs.stdenv.mkDerivation {
     name = "libfoo";
     src = majority-consensus-src;
@@ -36,7 +40,7 @@ let
     do
       echo "$line" >> input
     done
-    ${pkgs.jre_minimal}/bin/java -cp ${majority-consensus-class} MajorityConsensus input 1
+    ${jre_minimal}/bin/java -cp ${majority-consensus-class} MajorityConsensus input 1
   '';
 
   overrides = _: hspkgs: with pkgs.haskell.lib;
